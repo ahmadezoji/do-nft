@@ -1,0 +1,3 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { Outlet } from "react-router-dom";
+export const AuthLayout = () => (_jsxs("div", { className: "auth-shell", children: [_jsxs("div", { className: "hero-panel", children: [_jsx("p", { className: "eyebrow", children: "AI NFT SaaS" }), _jsx("h1", { children: "Generate, organize, and promote collections without collapsing into one-off tooling." }), _jsx("p", { className: "muted", children: "Configure providers, define your brand, draft collections, then move assets through studio and promotion workflows." })] }), _jsx("div", { className: "auth-panel", children: _jsx(Outlet, {}) })] }));

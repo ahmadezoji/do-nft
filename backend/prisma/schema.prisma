@@ -1,0 +1,235 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CredentialProvider {
+  OPENAI
+  GEMINI
+  OPENSEA
+  IPFS
+  TWITTER
+  DISCORD
+}
+
+enum CollectionStatus {
+  DRAFT
+  GENERATED
+  PUBLISHED
+}
+
+enum NftStatus {
+  DRAFT
+  PROMPT_GENERATED
+  IMAGE_GENERATED
+  METADATA_READY
+  UPLOADED_TO_IPFS
+  MINTED
+  LISTED
+  PROMOTED
+}
+
+enum Platform {
+  TWITTER
+  DISCORD
+  TELEGRAM
+  FARCASTER
+}
+
+enum PromotionCampaignStatus {
+  DRAFT
+  GENERATED
+  APPROVED
+  POSTED
+  FAILED
+}
+
+model User {
+  id               String             @id @default(cuid())
+  email            String             @unique
+  passwordHash     String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  profile          UserProfile?
+  settings         UserSettings?
+  promptProfile    UserPromptProfile?
+  credentials      Credential[]
+  branding         PersonalBranding?
+  collections      Collection[]
+  nfts             Nft[]
+  campaigns        PromotionCampaign[]
+}
+
+model UserProfile {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  fullName   String?
+  artistName String?
+  avatarUrl  String?
+  bio        String?
+  websiteUrl String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserSettings {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  preferredAi  String?
+  defaultChain String?
+  timezone     String?
+  defaultImageWidth  Int?
+  defaultImageHeight Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserPromptProfile {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  artworkStyle          String?
+  artVision             String?
+  nftVision             String?
+  inspirationSources    String?
+  signatureMotifs       String?
+  colorDirection        String?
+  promptBase            String?
+  negativePromptBase    String?
+  creativeRules         String?
+  sampleReferenceUrls   String[]
+  preferredAspectRatio  String?
+  preferredResolution   String?
+  preferredOpenAiModel  String?
+  preferredGeminiModel  String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Credential {
+  id             String             @id @default(cuid())
+  userId         String
+  provider       CredentialProvider
+  encryptedValue String
+  label          String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+}
+
+model PersonalBranding {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  brandName           String?
+  artistName          String?
+  artStyle            String?
+  personalityNotes    String?
+  targetAudience      String?
+  nftThemePreferences String?
+  toneOfVoice         String?
+  socialMediaStyle    String?
+  defaultHashtags     String[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Collection {
+  id                String           @id @default(cuid())
+  userId            String
+  name              String
+  description       String
+  theme             String?
+  story             String?
+  blockchain        String?
+  marketplaceTarget String?
+  coverImageUrl     String?
+  status            CollectionStatus @default(DRAFT)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nfts              Nft[]
+}
+
+model PromptTemplate {
+  id               String   @id @default(cuid())
+  title            String
+  category         String
+  style            String
+  structure        String
+  promptText       String
+  negativePrompt   String?
+  recommendedModel String?
+  aspectRatio      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  nfts             Nft[]
+}
+
+model Nft {
+  id              String    @id @default(cuid())
+  userId          String
+  collectionId    String?
+  templateId      String?
+  name            String
+  description     String?
+  customIdea      String?
+  prompt          String?
+  imageUrl        String?
+  rarityNotes     String?
+  metadata        Json?
+  status          NftStatus @default(DRAFT)
+  aiProvider      String?
+  aiModel         String?
+  imageStyle      String?
+  referenceUrls   String[]
+  referenceImageUrl String?
+  outputWidth     Int?
+  outputHeight    Int?
+  ipfsImageCid    String?
+  ipfsMetadataCid String?
+  mintedAt        DateTime?
+  listedAt        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collection      Collection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  template        PromptTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  campaigns       PromotionCampaign[]
+}
+
+model PromotionCampaign {
+  id          String                  @id @default(cuid())
+  userId      String
+  nftId       String?
+  collectionId String?
+  name        String
+  status      PromotionCampaignStatus @default(DRAFT)
+  platforms   Platform[]
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  user        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nft         Nft?                    @relation(fields: [nftId], references: [id], onDelete: SetNull)
+  posts       PromotionPost[]
+}
+
+model PromotionPost {
+  id         String                  @id @default(cuid())
+  campaignId String
+  platform   Platform
+  content    String
+  hashtags   String[]
+  status     PromotionCampaignStatus @default(DRAFT)
+  createdAt  DateTime                @default(now())
+  updatedAt  DateTime                @updatedAt
+  campaign   PromotionCampaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}

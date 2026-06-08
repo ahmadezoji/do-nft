@@ -1,0 +1,48 @@
+import { z } from "zod";
+
+import { NftStatus } from "../../../common/constants/domain-enums.js";
+
+export const generatePromptSchema = z.object({
+  collectionId: z.string().optional(),
+  customIdea: z.string().max(1000).optional(),
+  provider: z.enum(["openai", "gemini"]).default("openai"),
+  model: z.string().max(120).optional(),
+  style: z.string().max(240).optional(),
+  templateId: z.string().optional(),
+  referenceUrls: z.array(z.string().url()).optional(),
+  referenceImageUrl: z.string().url().optional(),
+  outputWidth: z.coerce.number().int().min(256).max(4096).optional(),
+  outputHeight: z.coerce.number().int().min(256).max(4096).optional()
+});
+
+export const generateImageSchema = z.object({
+  prompt: z.string().min(10),
+  provider: z.enum(["openai", "gemini"]).default("openai"),
+  model: z.string().max(120).optional(),
+  style: z.string().max(240).optional(),
+  referenceImageUrl: z.string().url().optional(),
+  outputWidth: z.coerce.number().int().min(256).max(4096).optional(),
+  outputHeight: z.coerce.number().int().min(256).max(4096).optional()
+});
+
+export const createNftSchema = z.object({
+  collectionId: z.string().optional(),
+  templateId: z.string().optional(),
+  name: z.string().min(2).max(160),
+  description: z.string().max(4000).optional(),
+  customIdea: z.string().max(1000).optional(),
+  prompt: z.string().max(4000).optional(),
+  imageUrl: z.string().optional(),
+  rarityNotes: z.string().max(500).optional(),
+  metadata: z.record(z.any()).optional(),
+  aiProvider: z.string().max(80).optional(),
+  aiModel: z.string().max(120).optional(),
+  imageStyle: z.string().max(240).optional(),
+  referenceUrls: z.array(z.string().url()).optional(),
+  referenceImageUrl: z.string().url().optional(),
+  outputWidth: z.coerce.number().int().min(256).max(4096).optional(),
+  outputHeight: z.coerce.number().int().min(256).max(4096).optional(),
+  status: z.nativeEnum(NftStatus).optional()
+});
+
+export const updateNftSchema = createNftSchema.partial();
