@@ -3,6 +3,7 @@ export type PromptGenerationContext = {
   collectionTheme?: string | null;
   collectionStory?: string | null;
   customIdea?: string | null;
+  targetLanguage?: string | null;
   referenceUrls?: string[];
   referenceImageUrl?: string | null;
   style?: string | null;
@@ -38,6 +39,20 @@ export type PromotionGenerationContext = {
   defaultHashtags?: string[];
 };
 
+export type ImageGenerationInput = {
+  prompt: string;
+  style?: string | null;
+  model?: string | null;
+  outputWidth?: number | null;
+  outputHeight?: number | null;
+  referenceImageUrl?: string | null;
+};
+
+export type ImageGenerationResult = {
+  imageUrl: string;
+  model?: string | null;
+};
+
 export interface TextGenerationProvider {
   readonly name: string;
   generatePrompt(context: PromptGenerationContext): Promise<string>;
@@ -46,12 +61,5 @@ export interface TextGenerationProvider {
 
 export interface ImageGenerationProvider {
   readonly name: string;
-  generateImage(input: {
-    prompt: string;
-    style?: string | null;
-    model?: string | null;
-    outputWidth?: number | null;
-    outputHeight?: number | null;
-    referenceImageUrl?: string | null;
-  }): Promise<{ imageUrl: string }>;
+  generateImage(input: ImageGenerationInput): Promise<ImageGenerationResult>;
 }

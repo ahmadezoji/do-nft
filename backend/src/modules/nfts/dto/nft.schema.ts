@@ -5,6 +5,7 @@ import { NftStatus } from "../../../common/constants/domain-enums.js";
 export const generatePromptSchema = z.object({
   collectionId: z.string().optional(),
   customIdea: z.string().max(1000).optional(),
+  targetLanguage: z.enum(["en", "fa"]).optional(),
   provider: z.enum(["openai", "gemini"]).default("openai"),
   model: z.string().max(120).optional(),
   style: z.string().max(240).optional(),

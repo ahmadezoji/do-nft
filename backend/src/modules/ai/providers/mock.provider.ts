@@ -1,6 +1,8 @@
 import { buildPlaceholderImage } from "../../../common/utils/image-placeholder.js";
 
 import type {
+  ImageGenerationInput,
+  ImageGenerationResult,
   ImageGenerationProvider,
   PromotionGenerationContext,
   PromptGenerationContext,
@@ -15,6 +17,9 @@ export class MockAiProvider implements TextGenerationProvider, ImageGenerationPr
       `Create an NFT artwork for "${context.collectionName ?? "Untitled Collection"}".`,
       context.collectionTheme ? `Theme: ${context.collectionTheme}.` : null,
       context.collectionStory ? `Narrative: ${context.collectionStory}.` : null,
+      context.targetLanguage
+        ? `Translate all guidance and produce the final prompt in ${context.targetLanguage}.`
+        : null,
       context.customIdea ? `Custom idea: ${context.customIdea}.` : null,
       context.referenceUrls?.length ? `Reference urls: ${context.referenceUrls.join(", ")}.` : null,
       context.referenceImageUrl ? `Reference image: ${context.referenceImageUrl}.` : null,
@@ -44,15 +49,9 @@ export class MockAiProvider implements TextGenerationProvider, ImageGenerationPr
       .join(" ");
   }
 
-  async generateImage(input: {
-    prompt: string;
-    style?: string | null;
-    model?: string | null;
-    outputWidth?: number | null;
-    outputHeight?: number | null;
-    referenceImageUrl?: string | null;
-  }) {
+  async generateImage(input: ImageGenerationInput): Promise<ImageGenerationResult> {
     return {
+      model: input.model ?? null,
       imageUrl: buildPlaceholderImage(
         `${input.model ?? "AI"} NFT Preview`,
         `${input.outputWidth ?? 1024}x${input.outputHeight ?? 1024} ${input.style ?? input.prompt.slice(0, 24)}`

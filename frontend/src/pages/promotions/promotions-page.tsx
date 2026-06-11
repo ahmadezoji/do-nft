@@ -2,14 +2,21 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import { Card } from "../../components/common/card";
+import { LoadingSpinner } from "../../components/common/loading-spinner";
 import { FormField } from "../../components/forms/form-field";
 import { nftsService } from "../../services/nfts-service";
 import { promotionsService } from "../../services/promotions-service";
+import { useAlerts } from "../../store/alert-context";
+import { useLanguage } from "../../store/language-context";
+import { getErrorMessage } from "../../utils/get-error-message";
 import type { Nft, PromotionCampaign } from "../../types/api";
 
 export const PromotionsPage = () => {
   const [campaigns, setCampaigns] = useState<PromotionCampaign[]>([]);
   const [nfts, setNfts] = useState<Nft[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { success, error } = useAlerts();
+  const { t } = useLanguage();
   const [form, setForm] = useState({
     name: "",
     nftId: "",
@@ -37,12 +44,21 @@ export const PromotionsPage = () => {
       .filter(([, enabled]) => enabled)
       .map(([platform]) => platform);
 
-    await promotionsService.create({
-      name: form.name,
-      nftId: form.nftId || undefined,
-      platforms
-    });
-    await load();
+    setIsSubmitting(true);
+
+    try {
+      await promotionsService.create({
+        name: form.name,
+        nftId: form.nftId || undefined,
+        platforms
+      });
+      await load();
+      success(t("campaignSaved"));
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -94,7 +110,12 @@ export const PromotionsPage = () => {
                 </label>
               ))}
             </div>
-            <button type="submit">Generate campaign posts</button>
+            <button type="submit" disabled={isSubmitting}>
+              <span className="button-label">
+                {isSubmitting ? <LoadingSpinner size="sm" /> : null}
+                Generate campaign posts
+              </span>
+            </button>
           </form>
         </Card>
 

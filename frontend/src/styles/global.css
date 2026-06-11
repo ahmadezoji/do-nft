@@ -48,6 +48,37 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.button-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.loading-spinner {
+  display: inline-block;
+  border-radius: 999px;
+  border: 2px solid rgba(246, 241, 233, 0.2);
+  border-top-color: currentColor;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-spinner-sm {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.loading-spinner-md {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.loading-spinner-lg {
+  width: 2rem;
+  height: 2rem;
+  border-width: 3px;
+}
+
 .secondary-button {
   background: rgba(246, 241, 233, 0.08);
   color: #f6f1e9;
@@ -72,6 +103,70 @@ textarea {
 
 #root {
   min-height: 100vh;
+}
+
+.app-alerts {
+  position: fixed;
+  top: 1.25rem;
+  inset-inline-end: 1.25rem;
+  z-index: 1000;
+  display: grid;
+  gap: 0.8rem;
+  width: min(420px, calc(100vw - 2rem));
+}
+
+.app-alert {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.9rem;
+  align-items: start;
+  padding: 1rem 1rem 1rem 1.05rem;
+  border-radius: 20px;
+  border: 1px solid rgba(246, 241, 233, 0.12);
+  background: rgba(7, 11, 20, 0.92);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(16px);
+}
+
+.app-alert-success {
+  border-color: rgba(145, 242, 191, 0.32);
+}
+
+.app-alert-info {
+  border-color: rgba(129, 196, 255, 0.3);
+}
+
+.app-alert-warning {
+  border-color: rgba(249, 199, 79, 0.34);
+}
+
+.app-alert-error {
+  border-color: rgba(255, 154, 143, 0.34);
+}
+
+.app-alert-body {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.app-alert-body strong,
+.app-alert-body p {
+  margin: 0;
+}
+
+.app-alert-body p {
+  color: rgba(246, 241, 233, 0.82);
+}
+
+.app-alert-close {
+  padding: 0;
+  min-width: 2rem;
+  min-height: 2rem;
+  border-radius: 999px;
+  background: rgba(246, 241, 233, 0.08);
+  color: #f6f1e9;
+  border: 1px solid rgba(246, 241, 233, 0.14);
+  line-height: 1;
 }
 
 .app-shell {
@@ -179,6 +274,10 @@ textarea {
   color: #ff9a8f;
 }
 
+.success-text {
+  color: #91f2bf;
+}
+
 .stack {
   display: grid;
   gap: 1.5rem;
@@ -235,6 +334,12 @@ textarea {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .list-row {
@@ -299,6 +404,7 @@ textarea {
   min-height: 360px;
   display: grid;
   place-items: center;
+  position: relative;
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.03);
   overflow: hidden;
@@ -308,6 +414,40 @@ textarea {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.preview-panel.is-loading img {
+  opacity: 0.24;
+}
+
+.preview-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 16, 28, 0.42);
+  backdrop-filter: blur(2px);
+}
+
+.preview-loading {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: center;
+  text-align: center;
+}
+
+.status-message {
+  margin: 0;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .detail-preview {
@@ -336,6 +476,65 @@ textarea {
   gap: 0.5rem;
 }
 
+.publish-item {
+  display: grid;
+  gap: 0.9rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(246, 241, 233, 0.06);
+}
+
+.publish-item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.publish-meta {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.centered-inline {
+  display: grid;
+  place-items: center;
+  min-height: 72px;
+}
+
+.history-item {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(246, 241, 233, 0.06);
+}
+
+.history-item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.history-item-media {
+  width: 88px;
+  height: 88px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.history-item-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.history-item-copy {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
 .centered-page {
   min-height: 100vh;
   display: grid;
@@ -358,6 +557,12 @@ textarea {
 }
 
 @media (max-width: 720px) {
+  .app-alerts {
+    top: 1rem;
+    inset-inline: 1rem;
+    width: auto;
+  }
+
   .content,
   .sidebar,
   .hero-panel,
@@ -382,6 +587,10 @@ textarea {
   }
 
   .resolution-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .history-item {
     grid-template-columns: 1fr;
   }
 

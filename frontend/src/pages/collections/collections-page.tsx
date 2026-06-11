@@ -3,8 +3,12 @@ import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 
 import { Card } from "../../components/common/card";
+import { LoadingSpinner } from "../../components/common/loading-spinner";
 import { FormField } from "../../components/forms/form-field";
 import { collectionsService } from "../../services/collections-service";
+import { useAlerts } from "../../store/alert-context";
+import { useLanguage } from "../../store/language-context";
+import { getErrorMessage } from "../../utils/get-error-message";
 import type { Collection } from "../../types/api";
 
 const emptyForm = {
@@ -19,6 +23,10 @@ const emptyForm = {
 export const CollectionsPage = () => {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [form, setForm] = useState(emptyForm);
+  const [isAssisting, setIsAssisting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { success, error } = useAlerts();
+  const { t } = useLanguage();
 
   const loadCollections = async () => setCollections(await collectionsService.list());
 
@@ -27,25 +35,43 @@ export const CollectionsPage = () => {
   }, []);
 
   const assist = async () => {
-    const result = await collectionsService.assist({
-      name: form.name,
-      theme: form.theme,
-      storySeed: form.story
-    });
+    setIsAssisting(true);
 
-    setForm((current) => ({
-      ...current,
-      description: result.description,
-      theme: result.theme ?? current.theme,
-      story: result.story ?? current.story
-    }));
+    try {
+      const result = await collectionsService.assist({
+        name: form.name,
+        theme: form.theme,
+        storySeed: form.story
+      });
+
+      setForm((current) => ({
+        ...current,
+        description: result.description,
+        theme: result.theme ?? current.theme,
+        story: result.story ?? current.story
+      }));
+      success(t("collectionAssisted"));
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setIsAssisting(false);
+    }
   };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await collectionsService.create(form);
-    setForm(emptyForm);
-    await loadCollections();
+    setIsSaving(true);
+
+    try {
+      await collectionsService.create(form);
+      setForm(emptyForm);
+      await loadCollections();
+      success(t("collectionSaved"));
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -78,10 +104,23 @@ export const CollectionsPage = () => {
               />
             </FormField>
             <div className="button-row">
-              <button type="button" className="secondary-button" onClick={() => void assist()}>
-                AI assist
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => void assist()}
+                disabled={isAssisting || isSaving}
+              >
+                <span className="button-label">
+                  {isAssisting ? <LoadingSpinner size="sm" /> : null}
+                  AI assist
+                </span>
               </button>
-              <button type="submit">Save collection</button>
+              <button type="submit" disabled={isSaving || isAssisting}>
+                <span className="button-label">
+                  {isSaving ? <LoadingSpinner size="sm" /> : null}
+                  Save collection
+                </span>
+              </button>
             </div>
           </form>
         </Card>

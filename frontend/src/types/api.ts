@@ -10,6 +10,7 @@ export type AuthUser = {
   } | null;
   settings?: {
     preferredAi?: string | null;
+    preferredLanguage?: "en" | "fa" | null;
     defaultChain?: string | null;
     timezone?: string | null;
     defaultImageWidth?: number | null;
@@ -72,6 +73,11 @@ export type Collection = {
   updatedAt: string;
 };
 
+export type CollectionPublishResult = {
+  collection: Collection;
+  publishedNfts: Nft[];
+};
+
 export type PromptTemplate = {
   id: string;
   title: string;
@@ -99,6 +105,7 @@ export type Nft = {
   outputWidth?: number | null;
   outputHeight?: number | null;
   collection?: Collection | null;
+  template?: PromptTemplate | null;
   ipfsImageCid?: string | null;
   ipfsMetadataCid?: string | null;
   updatedAt: string;

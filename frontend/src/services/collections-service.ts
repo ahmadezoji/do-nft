@@ -1,4 +1,4 @@
-import type { Collection } from "../types/api";
+import type { Collection, CollectionPublishResult } from "../types/api";
 
 import { http } from "./http";
 
@@ -17,6 +17,10 @@ export const collectionsService = {
   },
   update: async (id: string, payload: Partial<Collection>) => {
     const { data } = await http.put<Collection>(`/collections/${id}`, payload);
+    return data;
+  },
+  publish: async (id: string) => {
+    const { data } = await http.post<CollectionPublishResult>(`/collections/${id}/publish`);
     return data;
   },
   assist: async (payload: { name: string; theme?: string; audience?: string; storySeed?: string }) => {

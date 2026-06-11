@@ -2,8 +2,12 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import { Card } from "../../components/common/card";
+import { LoadingSpinner } from "../../components/common/loading-spinner";
 import { FormField } from "../../components/forms/form-field";
 import { brandingService } from "../../services/branding-service";
+import { useAlerts } from "../../store/alert-context";
+import { useLanguage } from "../../store/language-context";
+import { getErrorMessage } from "../../utils/get-error-message";
 import type { BrandingProfile } from "../../types/api";
 
 const emptyBranding: BrandingProfile = {
@@ -20,6 +24,9 @@ const emptyBranding: BrandingProfile = {
 
 export const BrandingPage = () => {
   const [form, setForm] = useState<BrandingProfile>(emptyBranding);
+  const [isSaving, setIsSaving] = useState(false);
+  const { success, error } = useAlerts();
+  const { t } = useLanguage();
 
   useEffect(() => {
     void brandingService.get().then((data) => setForm({ ...emptyBranding, ...data }));
@@ -27,7 +34,16 @@ export const BrandingPage = () => {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await brandingService.upsert(form);
+    setIsSaving(true);
+
+    try {
+      await brandingService.upsert(form);
+      success(t("brandingSaved"));
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -105,7 +121,12 @@ export const BrandingPage = () => {
               }
             />
           </FormField>
-          <button type="submit">Save branding</button>
+          <button type="submit" disabled={isSaving}>
+            <span className="button-label">
+              {isSaving ? <LoadingSpinner size="sm" /> : null}
+              Save branding
+            </span>
+          </button>
         </form>
       </Card>
     </div>

@@ -28,6 +28,7 @@ export class UsersRepository {
       bio,
       websiteUrl,
       preferredAi,
+      preferredLanguage,
       defaultChain,
       timezone,
       defaultImageWidth,
@@ -73,6 +74,7 @@ export class UsersRepository {
           upsert: {
             create: {
               preferredAi: asOptionalString(preferredAi),
+              preferredLanguage: asOptionalString(preferredLanguage),
               defaultChain: asOptionalString(defaultChain),
               timezone: asOptionalString(timezone),
               defaultImageWidth: typeof defaultImageWidth === "number" ? defaultImageWidth : undefined,
@@ -80,6 +82,7 @@ export class UsersRepository {
             },
             update: {
               preferredAi: asNullableString(preferredAi),
+              preferredLanguage: asNullableString(preferredLanguage),
               defaultChain: asNullableString(defaultChain),
               timezone: asNullableString(timezone),
               defaultImageWidth: typeof defaultImageWidth === "number" ? defaultImageWidth : null,

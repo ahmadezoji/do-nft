@@ -2,35 +2,43 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import { LoadingSpinner } from "../../components/common/loading-spinner";
 import { FormField } from "../../components/forms/form-field";
 import { authService } from "../../services/auth-service";
+import { useAlerts } from "../../store/alert-context";
 import { useAuth } from "../../store/auth-context";
+import { useLanguage } from "../../store/language-context";
 
 export const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { t } = useLanguage();
+  const { error: showError } = useAlerts();
   const [form, setForm] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setIsSubmitting(true);
 
     try {
       const result = await authService.login(form);
       login(result.token, result.user);
       navigate("/");
     } catch {
-      setError("Login failed. Check your email and password.");
+      showError(t("loginFailed"));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <form className="stack" onSubmit={submit}>
       <div>
-        <p className="eyebrow">Welcome back</p>
-        <h2>Sign in</h2>
+        <p className="eyebrow">{t("welcomeBack")}</p>
+        <h2>{t("signIn")}</h2>
       </div>
-      <FormField label="Email">
+      <FormField label={t("email")}>
         <input
           type="email"
           value={form.email}
@@ -38,7 +46,7 @@ export const LoginPage = () => {
           required
         />
       </FormField>
-      <FormField label="Password">
+      <FormField label={t("password")}>
         <input
           type="password"
           value={form.password}
@@ -46,10 +54,14 @@ export const LoginPage = () => {
           required
         />
       </FormField>
-      {error ? <p className="error-text">{error}</p> : null}
-      <button type="submit">Sign in</button>
+      <button type="submit" disabled={isSubmitting}>
+        <span className="button-label">
+          {isSubmitting ? <LoadingSpinner size="sm" /> : null}
+          {t("signIn")}
+        </span>
+      </button>
       <p className="muted">
-        Need an account? <Link to="/register">Register</Link>
+        {t("needAccount")} <Link to="/register">{t("register")}</Link>
       </p>
     </form>
   );

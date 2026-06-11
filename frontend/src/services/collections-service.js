@@ -16,6 +16,10 @@ export const collectionsService = {
         const { data } = await http.put(`/collections/${id}`, payload);
         return data;
     },
+    publish: async (id) => {
+        const { data } = await http.post(`/collections/${id}/publish`);
+        return data;
+    },
     assist: async (payload) => {
         const { data } = await http.post("/collections/assist", payload);
         return data;

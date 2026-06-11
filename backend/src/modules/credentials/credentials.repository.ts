@@ -12,6 +12,17 @@ export class CredentialsRepository {
     });
   }
 
+  findByProvider(userId: string, provider: CredentialProvider) {
+    return prisma.credential.findUnique({
+      where: {
+        userId_provider: {
+          userId,
+          provider
+        }
+      }
+    });
+  }
+
   upsert(userId: string, provider: CredentialProvider, encryptedValue: string, label?: string) {
     return prisma.credential.upsert({
       where: {

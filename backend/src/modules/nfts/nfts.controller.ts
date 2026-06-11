@@ -30,7 +30,7 @@ export class NftsController {
   };
 
   generateImage = async (request: Request, response: Response) => {
-    response.json(await this.nftsService.generateImage(request.body));
+    response.json(await this.nftsService.generateImage(request.auth!.userId, request.body));
   };
 
   uploadToIpfs = async (request: Request, response: Response) => {

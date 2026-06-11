@@ -33,4 +33,9 @@ export class CollectionsController {
     const result = await this.collectionsService.assist(request.auth!.userId, request.body);
     response.json(result);
   };
+
+  publish = async (request: Request, response: Response) => {
+    const result = await this.collectionsService.publish(request.auth!.userId, String(request.params.id));
+    response.json(result);
+  };
 }

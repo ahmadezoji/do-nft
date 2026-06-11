@@ -7,6 +7,7 @@ export const updateUserSettingsSchema = z.object({
   bio: z.string().max(2000).optional(),
   websiteUrl: z.string().url().optional().or(z.literal("")),
   preferredAi: z.string().max(80).optional(),
+  preferredLanguage: z.enum(["en", "fa"]).optional(),
   defaultChain: z.string().max(80).optional(),
   timezone: z.string().max(80).optional(),
   defaultImageWidth: z.coerce.number().int().min(256).max(4096).optional(),

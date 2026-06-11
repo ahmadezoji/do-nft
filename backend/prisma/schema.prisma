@@ -82,6 +82,7 @@ model UserSettings {
   id           String   @id @default(cuid())
   userId       String   @unique
   preferredAi  String?
+  preferredLanguage String?
   defaultChain String?
   timezone     String?
   defaultImageWidth  Int?

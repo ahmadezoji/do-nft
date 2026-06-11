@@ -1,13 +1,21 @@
+import { CredentialProvider } from "../../common/constants/domain-enums.js";
+import { AppError } from "../../common/errors/app-error.js";
+import { env } from "../../config/env.js";
 import { prisma } from "../../database/prisma.js";
+import { CredentialsService } from "../credentials/credentials.service.js";
 
-import type { ImageGenerationProvider, TextGenerationProvider } from "./ai.types.js";
+import type { ImageGenerationInput, ImageGenerationProvider, TextGenerationProvider } from "./ai.types.js";
 import { MockAiProvider } from "./providers/mock.provider.js";
+import { OpenAiImageProvider } from "./providers/openai-image.provider.js";
 
 export class AiService {
-  private readonly provider: TextGenerationProvider & ImageGenerationProvider;
+  private readonly textProvider: TextGenerationProvider & ImageGenerationProvider;
 
-  constructor() {
-    this.provider = new MockAiProvider();
+  constructor(
+    private readonly credentialsService = new CredentialsService(),
+    textProvider: TextGenerationProvider & ImageGenerationProvider = new MockAiProvider()
+  ) {
+    this.textProvider = textProvider;
   }
 
   async generatePrompt(
@@ -15,6 +23,7 @@ export class AiService {
     input: {
       collectionId?: string;
       customIdea?: string;
+      targetLanguage?: string;
       style?: string;
       templateId?: string;
       model?: string;
@@ -33,11 +42,12 @@ export class AiService {
       input.templateId ? prisma.promptTemplate.findUnique({ where: { id: input.templateId } }) : Promise.resolve(null)
     ]);
 
-    return this.provider.generatePrompt({
+    return this.textProvider.generatePrompt({
       collectionName: collection?.name,
       collectionTheme: collection?.theme,
       collectionStory: collection?.story,
       customIdea: input.customIdea,
+      targetLanguage: input.targetLanguage,
       referenceUrls: input.referenceUrls,
       referenceImageUrl: input.referenceImageUrl,
       style: input.style,
@@ -65,15 +75,26 @@ export class AiService {
     });
   }
 
-  async generateImage(input: {
-    prompt: string;
-    style?: string;
-    model?: string;
-    outputWidth?: number;
-    outputHeight?: number;
-    referenceImageUrl?: string;
-  }) {
-    return this.provider.generateImage(input);
+  async generateImage(
+    userId: string,
+    input: ImageGenerationInput & {
+      provider?: string;
+    }
+  ) {
+    const provider = input.provider?.toLowerCase() ?? "openai";
+
+    if (provider !== "openai") {
+      return this.textProvider.generateImage(input);
+    }
+
+    const configuredCredentials = await this.credentialsService.getProviderValues(userId, CredentialProvider.OPENAI);
+    const apiKey = configuredCredentials?.apiKey ?? env.OPENAI_API_KEY;
+
+    if (!apiKey) {
+      throw new AppError("OpenAI is not configured. Add your API key in Settings before generating images.", 400);
+    }
+
+    return new OpenAiImageProvider(apiKey).generateImage(input);
   }
 
   async generatePromotion(
@@ -82,7 +103,7 @@ export class AiService {
   ) {
     const branding = await prisma.personalBranding.findUnique({ where: { userId } });
 
-    return this.provider.generatePromotion({
+    return this.textProvider.generatePromotion({
       assetName: input.assetName,
       assetDescription: input.assetDescription,
       platforms: input.platforms,

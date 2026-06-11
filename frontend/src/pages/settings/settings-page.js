@@ -1,10 +1,14 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useState } from "react";
 import { Card } from "../../components/common/card";
+import { LoadingSpinner } from "../../components/common/loading-spinner";
 import { FormField } from "../../components/forms/form-field";
 import { credentialsService } from "../../services/credentials-service";
 import { usersService } from "../../services/users-service";
+import { useAlerts } from "../../store/alert-context";
 import { useAuth } from "../../store/auth-context";
+import { useLanguage } from "../../store/language-context";
+import { getErrorMessage } from "../../utils/get-error-message";
 const credentialConfigs = {
     OPENAI: {
         title: "OpenAI",
@@ -139,6 +143,8 @@ const buildInitialDrafts = () => Object.fromEntries(Object.entries(credentialCon
 ]));
 export const SettingsPage = () => {
     const { user, refreshUser } = useAuth();
+    const { t, language } = useLanguage();
+    const { success, error } = useAlerts();
     const [credentials, setCredentials] = useState([]);
     const [profileForm, setProfileForm] = useState({
         fullName: user?.profile?.fullName ?? "",
@@ -146,6 +152,7 @@ export const SettingsPage = () => {
         bio: user?.profile?.bio ?? "",
         websiteUrl: user?.profile?.websiteUrl ?? "",
         preferredAi: user?.settings?.preferredAi ?? "",
+        preferredLanguage: user?.settings?.preferredLanguage ?? language,
         defaultChain: user?.settings?.defaultChain ?? "",
         timezone: user?.settings?.timezone ?? "",
         defaultImageWidth: user?.settings?.defaultImageWidth ?? 1024,
@@ -162,10 +169,12 @@ export const SettingsPage = () => {
         sampleReferenceUrls: (user?.promptProfile?.sampleReferenceUrls ?? []).join(", "),
         preferredAspectRatio: user?.promptProfile?.preferredAspectRatio ?? "1:1",
         preferredResolution: user?.promptProfile?.preferredResolution ?? "1024x1024",
-        preferredOpenAiModel: user?.promptProfile?.preferredOpenAiModel ?? "gpt-image-1",
+        preferredOpenAiModel: user?.promptProfile?.preferredOpenAiModel ?? "gpt-image-2",
         preferredGeminiModel: user?.promptProfile?.preferredGeminiModel ?? "gemini-2.5-flash-image-preview"
     });
     const [credentialDrafts, setCredentialDrafts] = useState(buildInitialDrafts);
+    const [isSavingProfile, setIsSavingProfile] = useState(false);
+    const [savingCredentialProvider, setSavingCredentialProvider] = useState(null);
     const loadCredentials = async () => setCredentials(await credentialsService.list());
     useEffect(() => {
         void loadCredentials();
@@ -177,6 +186,7 @@ export const SettingsPage = () => {
             bio: user?.profile?.bio ?? "",
             websiteUrl: user?.profile?.websiteUrl ?? "",
             preferredAi: user?.settings?.preferredAi ?? "",
+            preferredLanguage: user?.settings?.preferredLanguage ?? language,
             defaultChain: user?.settings?.defaultChain ?? "",
             timezone: user?.settings?.timezone ?? "",
             defaultImageWidth: user?.settings?.defaultImageWidth ?? 1024,
@@ -193,20 +203,30 @@ export const SettingsPage = () => {
             sampleReferenceUrls: (user?.promptProfile?.sampleReferenceUrls ?? []).join(", "),
             preferredAspectRatio: user?.promptProfile?.preferredAspectRatio ?? "1:1",
             preferredResolution: user?.promptProfile?.preferredResolution ?? "1024x1024",
-            preferredOpenAiModel: user?.promptProfile?.preferredOpenAiModel ?? "gpt-image-1",
+            preferredOpenAiModel: user?.promptProfile?.preferredOpenAiModel ?? "gpt-image-2",
             preferredGeminiModel: user?.promptProfile?.preferredGeminiModel ?? "gemini-2.5-flash-image-preview"
         });
     }, [user]);
     const saveProfile = async (event) => {
         event.preventDefault();
-        await usersService.updateSettings({
-            ...profileForm,
-            sampleReferenceUrls: profileForm.sampleReferenceUrls
-                .split(",")
-                .map((item) => item.trim())
-                .filter(Boolean)
-        });
-        await refreshUser();
+        setIsSavingProfile(true);
+        try {
+            await usersService.updateSettings({
+                ...profileForm,
+                sampleReferenceUrls: profileForm.sampleReferenceUrls
+                    .split(",")
+                    .map((item) => item.trim())
+                    .filter(Boolean)
+            });
+            await refreshUser();
+            success(t("settingsSaved"));
+        }
+        catch (caughtError) {
+            error(getErrorMessage(caughtError, t("somethingWentWrong")));
+        }
+        finally {
+            setIsSavingProfile(false);
+        }
     };
     const updateCredentialField = (provider, fieldKey, value) => {
         setCredentialDrafts((current) => ({
@@ -226,22 +246,32 @@ export const SettingsPage = () => {
         if (!hasAtLeastOneValue) {
             return;
         }
-        await credentialsService.upsert(provider, {
-            values,
-            label: credentialConfigs[provider].label
-        });
-        setCredentialDrafts((current) => ({
-            ...current,
-            [provider]: Object.fromEntries(credentialConfigs[provider].fields.map((field) => [
-                field.key,
-                provider === "IPFS" && field.key === "provider" ? current[provider][field.key] || "Pinata" : ""
-            ]))
-        }));
-        await loadCredentials();
+        setSavingCredentialProvider(provider);
+        try {
+            await credentialsService.upsert(provider, {
+                values,
+                label: credentialConfigs[provider].label
+            });
+            setCredentialDrafts((current) => ({
+                ...current,
+                [provider]: Object.fromEntries(credentialConfigs[provider].fields.map((field) => [
+                    field.key,
+                    provider === "IPFS" && field.key === "provider" ? current[provider][field.key] || "Pinata" : ""
+                ]))
+            }));
+            await loadCredentials();
+            success(t("credentialSaved"));
+        }
+        catch (caughtError) {
+            error(getErrorMessage(caughtError, t("somethingWentWrong")));
+        }
+        finally {
+            setSavingCredentialProvider(null);
+        }
     };
-    return (_jsxs("div", { className: "stack", children: [_jsx("header", { className: "page-header", children: _jsxs("div", { children: [_jsx("p", { className: "eyebrow", children: "Account" }), _jsx("h1", { children: "Settings & Integrations" })] }) }), _jsxs("div", { className: "grid split-grid", children: [_jsxs(Card, { children: [_jsx("h3", { children: "Profile settings" }), _jsxs("form", { className: "stack compact", onSubmit: saveProfile, children: [_jsx(FormField, { label: "Full name", children: _jsx("input", { value: profileForm.fullName, onChange: (event) => setProfileForm((current) => ({ ...current, fullName: event.target.value })) }) }), _jsx(FormField, { label: "Artist name", children: _jsx("input", { value: profileForm.artistName, onChange: (event) => setProfileForm((current) => ({ ...current, artistName: event.target.value })) }) }), _jsx(FormField, { label: "Artist bio", children: _jsx("textarea", { value: profileForm.bio, onChange: (event) => setProfileForm((current) => ({ ...current, bio: event.target.value })) }) }), _jsx(FormField, { label: "Website / portfolio", children: _jsx("input", { type: "url", value: profileForm.websiteUrl, onChange: (event) => setProfileForm((current) => ({ ...current, websiteUrl: event.target.value })) }) }), _jsx(FormField, { label: "Preferred AI", children: _jsx("input", { value: profileForm.preferredAi, onChange: (event) => setProfileForm((current) => ({ ...current, preferredAi: event.target.value })) }) }), _jsx(FormField, { label: "Default chain", children: _jsx("input", { value: profileForm.defaultChain, onChange: (event) => setProfileForm((current) => ({ ...current, defaultChain: event.target.value })) }) }), _jsx(FormField, { label: "Timezone", children: _jsx("input", { value: profileForm.timezone, onChange: (event) => setProfileForm((current) => ({ ...current, timezone: event.target.value })) }) }), _jsx(FormField, { label: "Default image width", children: _jsx("input", { type: "number", min: 256, max: 4096, value: profileForm.defaultImageWidth, onChange: (event) => setProfileForm((current) => ({ ...current, defaultImageWidth: Number(event.target.value) || 1024 })) }) }), _jsx(FormField, { label: "Default image height", children: _jsx("input", { type: "number", min: 256, max: 4096, value: profileForm.defaultImageHeight, onChange: (event) => setProfileForm((current) => ({ ...current, defaultImageHeight: Number(event.target.value) || 1024 })) }) }), _jsx(FormField, { label: "Artwork style", children: _jsx("textarea", { value: profileForm.artworkStyle, onChange: (event) => setProfileForm((current) => ({ ...current, artworkStyle: event.target.value })) }) }), _jsx(FormField, { label: "Art vision", children: _jsx("textarea", { value: profileForm.artVision, onChange: (event) => setProfileForm((current) => ({ ...current, artVision: event.target.value })) }) }), _jsx(FormField, { label: "NFT vision", children: _jsx("textarea", { value: profileForm.nftVision, onChange: (event) => setProfileForm((current) => ({ ...current, nftVision: event.target.value })) }) }), _jsx(FormField, { label: "Inspiration sources", children: _jsx("textarea", { value: profileForm.inspirationSources, onChange: (event) => setProfileForm((current) => ({ ...current, inspirationSources: event.target.value })) }) }), _jsx(FormField, { label: "Signature motifs", children: _jsx("textarea", { value: profileForm.signatureMotifs, onChange: (event) => setProfileForm((current) => ({ ...current, signatureMotifs: event.target.value })) }) }), _jsx(FormField, { label: "Color direction", children: _jsx("textarea", { value: profileForm.colorDirection, onChange: (event) => setProfileForm((current) => ({ ...current, colorDirection: event.target.value })) }) }), _jsx(FormField, { label: "Smart prompt base", children: _jsx("textarea", { value: profileForm.promptBase, onChange: (event) => setProfileForm((current) => ({ ...current, promptBase: event.target.value })) }) }), _jsx(FormField, { label: "Negative prompt base", children: _jsx("textarea", { value: profileForm.negativePromptBase, onChange: (event) => setProfileForm((current) => ({ ...current, negativePromptBase: event.target.value })) }) }), _jsx(FormField, { label: "Creative rules", children: _jsx("textarea", { value: profileForm.creativeRules, onChange: (event) => setProfileForm((current) => ({ ...current, creativeRules: event.target.value })) }) }), _jsx(FormField, { label: "Sample reference URLs", children: _jsx("textarea", { value: profileForm.sampleReferenceUrls, onChange: (event) => setProfileForm((current) => ({ ...current, sampleReferenceUrls: event.target.value })) }) }), _jsx(FormField, { label: "Preferred aspect ratio", children: _jsx("input", { value: profileForm.preferredAspectRatio, onChange: (event) => setProfileForm((current) => ({ ...current, preferredAspectRatio: event.target.value })) }) }), _jsx(FormField, { label: "Preferred resolution", children: _jsx("input", { value: profileForm.preferredResolution, onChange: (event) => setProfileForm((current) => ({ ...current, preferredResolution: event.target.value })) }) }), _jsx(FormField, { label: "Preferred OpenAI model", children: _jsx("input", { value: profileForm.preferredOpenAiModel, onChange: (event) => setProfileForm((current) => ({ ...current, preferredOpenAiModel: event.target.value })) }) }), _jsx(FormField, { label: "Preferred Gemini model", children: _jsx("input", { value: profileForm.preferredGeminiModel, onChange: (event) => setProfileForm((current) => ({ ...current, preferredGeminiModel: event.target.value })) }) }), _jsx("button", { type: "submit", children: "Save settings" })] })] }), _jsxs(Card, { children: [_jsx("h3", { children: "Integrations" }), _jsx("div", { className: "stack compact", children: Object.keys(credentialConfigs).map((provider) => {
+    return (_jsxs("div", { className: "stack", children: [_jsx("header", { className: "page-header", children: _jsxs("div", { children: [_jsx("p", { className: "eyebrow", children: t("account") }), _jsx("h1", { children: t("settingsAndIntegrations") })] }) }), _jsxs("div", { className: "grid split-grid", children: [_jsxs(Card, { children: [_jsx("h3", { children: t("profileSettings") }), _jsxs("form", { className: "stack compact", onSubmit: saveProfile, children: [_jsx(FormField, { label: t("fullName"), children: _jsx("input", { value: profileForm.fullName, onChange: (event) => setProfileForm((current) => ({ ...current, fullName: event.target.value })) }) }), _jsx(FormField, { label: t("artistName"), children: _jsx("input", { value: profileForm.artistName, onChange: (event) => setProfileForm((current) => ({ ...current, artistName: event.target.value })) }) }), _jsx(FormField, { label: t("artistBio"), children: _jsx("textarea", { value: profileForm.bio, onChange: (event) => setProfileForm((current) => ({ ...current, bio: event.target.value })) }) }), _jsx(FormField, { label: t("websitePortfolio"), children: _jsx("input", { type: "url", value: profileForm.websiteUrl, onChange: (event) => setProfileForm((current) => ({ ...current, websiteUrl: event.target.value })) }) }), _jsx(FormField, { label: t("preferredAi"), children: _jsx("input", { value: profileForm.preferredAi, onChange: (event) => setProfileForm((current) => ({ ...current, preferredAi: event.target.value })) }) }), _jsx(FormField, { label: t("preferredLanguage"), children: _jsxs("select", { value: profileForm.preferredLanguage, onChange: (event) => setProfileForm((current) => ({ ...current, preferredLanguage: event.target.value })), children: [_jsx("option", { value: "en", children: t("english") }), _jsx("option", { value: "fa", children: t("persian") })] }) }), _jsx(FormField, { label: t("defaultChain"), children: _jsx("input", { value: profileForm.defaultChain, onChange: (event) => setProfileForm((current) => ({ ...current, defaultChain: event.target.value })) }) }), _jsx(FormField, { label: t("timezone"), children: _jsx("input", { value: profileForm.timezone, onChange: (event) => setProfileForm((current) => ({ ...current, timezone: event.target.value })) }) }), _jsx(FormField, { label: t("defaultImageWidth"), children: _jsx("input", { type: "number", min: 256, max: 4096, value: profileForm.defaultImageWidth, onChange: (event) => setProfileForm((current) => ({ ...current, defaultImageWidth: Number(event.target.value) || 1024 })) }) }), _jsx(FormField, { label: t("defaultImageHeight"), children: _jsx("input", { type: "number", min: 256, max: 4096, value: profileForm.defaultImageHeight, onChange: (event) => setProfileForm((current) => ({ ...current, defaultImageHeight: Number(event.target.value) || 1024 })) }) }), _jsx(FormField, { label: t("artworkStyle"), children: _jsx("textarea", { value: profileForm.artworkStyle, onChange: (event) => setProfileForm((current) => ({ ...current, artworkStyle: event.target.value })) }) }), _jsx(FormField, { label: t("artVision"), children: _jsx("textarea", { value: profileForm.artVision, onChange: (event) => setProfileForm((current) => ({ ...current, artVision: event.target.value })) }) }), _jsx(FormField, { label: t("nftVision"), children: _jsx("textarea", { value: profileForm.nftVision, onChange: (event) => setProfileForm((current) => ({ ...current, nftVision: event.target.value })) }) }), _jsx(FormField, { label: t("inspirationSources"), children: _jsx("textarea", { value: profileForm.inspirationSources, onChange: (event) => setProfileForm((current) => ({ ...current, inspirationSources: event.target.value })) }) }), _jsx(FormField, { label: t("signatureMotifs"), children: _jsx("textarea", { value: profileForm.signatureMotifs, onChange: (event) => setProfileForm((current) => ({ ...current, signatureMotifs: event.target.value })) }) }), _jsx(FormField, { label: t("colorDirection"), children: _jsx("textarea", { value: profileForm.colorDirection, onChange: (event) => setProfileForm((current) => ({ ...current, colorDirection: event.target.value })) }) }), _jsx(FormField, { label: t("smartPromptBase"), children: _jsx("textarea", { value: profileForm.promptBase, onChange: (event) => setProfileForm((current) => ({ ...current, promptBase: event.target.value })) }) }), _jsx(FormField, { label: t("negativePromptBase"), children: _jsx("textarea", { value: profileForm.negativePromptBase, onChange: (event) => setProfileForm((current) => ({ ...current, negativePromptBase: event.target.value })) }) }), _jsx(FormField, { label: t("creativeRules"), children: _jsx("textarea", { value: profileForm.creativeRules, onChange: (event) => setProfileForm((current) => ({ ...current, creativeRules: event.target.value })) }) }), _jsx(FormField, { label: t("sampleReferenceUrls"), children: _jsx("textarea", { value: profileForm.sampleReferenceUrls, onChange: (event) => setProfileForm((current) => ({ ...current, sampleReferenceUrls: event.target.value })) }) }), _jsx(FormField, { label: t("preferredAspectRatio"), children: _jsx("input", { value: profileForm.preferredAspectRatio, onChange: (event) => setProfileForm((current) => ({ ...current, preferredAspectRatio: event.target.value })) }) }), _jsx(FormField, { label: t("preferredResolution"), children: _jsx("input", { value: profileForm.preferredResolution, onChange: (event) => setProfileForm((current) => ({ ...current, preferredResolution: event.target.value })) }) }), _jsx(FormField, { label: t("preferredOpenAiModel"), children: _jsx("input", { value: profileForm.preferredOpenAiModel, onChange: (event) => setProfileForm((current) => ({ ...current, preferredOpenAiModel: event.target.value })) }) }), _jsx(FormField, { label: t("preferredGeminiModel"), children: _jsx("input", { value: profileForm.preferredGeminiModel, onChange: (event) => setProfileForm((current) => ({ ...current, preferredGeminiModel: event.target.value })) }) }), _jsx("button", { type: "submit", disabled: isSavingProfile, children: _jsxs("span", { className: "button-label", children: [isSavingProfile ? _jsx(LoadingSpinner, { size: "sm" }) : null, t("saveSettings")] }) })] })] }), _jsxs(Card, { children: [_jsx("h3", { children: t("integrations") }), _jsx("div", { className: "stack compact", children: Object.keys(credentialConfigs).map((provider) => {
                                     const existing = credentials.find((item) => item.provider === provider);
                                     const config = credentialConfigs[provider];
-                                    return (_jsxs("div", { className: "provider-credential-card", children: [_jsxs("div", { className: "provider-credential-header", children: [_jsxs("div", { children: [_jsx("strong", { children: config.title }), _jsx("p", { className: "muted", children: config.description })] }), _jsxs("div", { className: "provider-status", children: [_jsx("span", { children: existing?.configured ? "Configured" : "Not configured" }), existing?.configuredFields.length ? (_jsxs("span", { className: "muted", children: [existing.configuredFields.length, " field(s) saved"] })) : null] })] }), _jsx("div", { className: "provider-credential-fields", children: config.fields.map((field) => (_jsx(FormField, { label: field.label, children: _jsx("input", { type: field.type, placeholder: field.placeholder, value: credentialDrafts[provider][field.key] ?? "", onChange: (event) => updateCredentialField(provider, field.key, event.target.value), required: field.required }) }, `${provider}-${field.key}`))) }), _jsx("div", { className: "provider-credential-actions", children: _jsxs("button", { type: "button", className: "secondary-button", onClick: () => void saveCredential(provider), disabled: !hasRequiredFields(provider), children: ["Save ", config.title] }) })] }, provider));
+                                    return (_jsxs("div", { className: "provider-credential-card", children: [_jsxs("div", { className: "provider-credential-header", children: [_jsxs("div", { children: [_jsx("strong", { children: config.title }), _jsx("p", { className: "muted", children: config.description })] }), _jsxs("div", { className: "provider-status", children: [_jsx("span", { children: existing?.configured ? t("configured") : t("notConfigured") }), existing?.configuredFields.length ? (_jsxs("span", { className: "muted", children: [existing.configuredFields.length, " ", t("fieldsSaved")] })) : null] })] }), _jsx("div", { className: "provider-credential-fields", children: config.fields.map((field) => (_jsx(FormField, { label: field.label, children: _jsx("input", { type: field.type, placeholder: field.placeholder, value: credentialDrafts[provider][field.key] ?? "", onChange: (event) => updateCredentialField(provider, field.key, event.target.value), required: field.required }) }, `${provider}-${field.key}`))) }), _jsx("div", { className: "provider-credential-actions", children: _jsx("button", { type: "button", className: "secondary-button", onClick: () => void saveCredential(provider), disabled: !hasRequiredFields(provider) || savingCredentialProvider !== null, children: _jsxs("span", { className: "button-label", children: [savingCredentialProvider === provider ? _jsx(LoadingSpinner, { size: "sm" }) : null, "Save ", config.title] }) }) })] }, provider));
                                 }) })] })] })] }));
 };

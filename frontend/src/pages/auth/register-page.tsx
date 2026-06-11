@@ -2,41 +2,49 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import { LoadingSpinner } from "../../components/common/loading-spinner";
 import { FormField } from "../../components/forms/form-field";
 import { authService } from "../../services/auth-service";
+import { useAlerts } from "../../store/alert-context";
 import { useAuth } from "../../store/auth-context";
+import { useLanguage } from "../../store/language-context";
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { t } = useLanguage();
+  const { error: showError } = useAlerts();
   const [form, setForm] = useState({ fullName: "", email: "", password: "" });
-  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setIsSubmitting(true);
 
     try {
       const result = await authService.register(form);
       login(result.token, result.user);
       navigate("/");
     } catch {
-      setError("Registration failed. Use a different email or stronger password.");
+      showError(t("registerFailed"));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <form className="stack" onSubmit={submit}>
       <div>
-        <p className="eyebrow">New workspace</p>
-        <h2>Create account</h2>
+        <p className="eyebrow">{t("newWorkspace")}</p>
+        <h2>{t("createAccount")}</h2>
       </div>
-      <FormField label="Full name">
+      <FormField label={t("fullName")}>
         <input
           value={form.fullName}
           onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
         />
       </FormField>
-      <FormField label="Email">
+      <FormField label={t("email")}>
         <input
           type="email"
           value={form.email}
@@ -44,7 +52,7 @@ export const RegisterPage = () => {
           required
         />
       </FormField>
-      <FormField label="Password">
+      <FormField label={t("password")}>
         <input
           type="password"
           value={form.password}
@@ -53,10 +61,14 @@ export const RegisterPage = () => {
           required
         />
       </FormField>
-      {error ? <p className="error-text">{error}</p> : null}
-      <button type="submit">Create account</button>
+      <button type="submit" disabled={isSubmitting}>
+        <span className="button-label">
+          {isSubmitting ? <LoadingSpinner size="sm" /> : null}
+          {t("createAccount")}
+        </span>
+      </button>
       <p className="muted">
-        Already have an account? <Link to="/login">Sign in</Link>
+        {t("alreadyHaveAccount")} <Link to="/login">{t("signIn")}</Link>
       </p>
     </form>
   );

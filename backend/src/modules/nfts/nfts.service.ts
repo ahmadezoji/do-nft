@@ -80,7 +80,7 @@ export class NftsService {
     };
   }
 
-  async generateImage(input: {
+  async generateImage(userId: string, input: {
     prompt: string;
     provider?: string;
     style?: string;
@@ -89,12 +89,12 @@ export class NftsService {
     outputHeight?: number;
     referenceImageUrl?: string;
   }) {
-    const image = await this.aiService.generateImage(input);
+    const image = await this.aiService.generateImage(userId, input);
 
     return {
       ...image,
       provider: input.provider ?? "openai",
-      model: input.model ?? null,
+      model: image.model ?? input.model ?? null,
       status: NftStatus.IMAGE_GENERATED
     };
   }
@@ -114,11 +114,17 @@ export class NftsService {
       attributes: nft.metadata
     });
 
-    return this.nftsRepository.update(userId, nftId, {
+    const updatedNft = await this.nftsRepository.update(userId, nftId, {
       ipfsImageCid: image.cid,
       ipfsMetadataCid: metadata.cid,
       status: NftStatus.UPLOADED_TO_IPFS
     });
+
+    if (!updatedNft) {
+      throw new AppError("NFT not found", 404);
+    }
+
+    return updatedNft;
   }
 
   async listOnMarketplace(userId: string, nftId: string) {
@@ -127,12 +133,17 @@ export class NftsService {
       name: nft.name,
       metadataCid: nft.ipfsMetadataCid
     });
+    const updatedNft = await this.nftsRepository.update(userId, nftId, {
+      status: NftStatus.LISTED,
+      listedAt: new Date()
+    });
+
+    if (!updatedNft) {
+      throw new AppError("NFT not found", 404);
+    }
 
     return {
-      nft: await this.nftsRepository.update(userId, nftId, {
-        status: NftStatus.LISTED,
-        listedAt: new Date()
-      }),
+      nft: updatedNft,
       listing
     };
   }

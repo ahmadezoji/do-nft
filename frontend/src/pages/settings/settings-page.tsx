@@ -2,10 +2,14 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import { Card } from "../../components/common/card";
+import { LoadingSpinner } from "../../components/common/loading-spinner";
 import { FormField } from "../../components/forms/form-field";
 import { credentialsService } from "../../services/credentials-service";
 import { usersService } from "../../services/users-service";
+import { useAlerts } from "../../store/alert-context";
 import { useAuth } from "../../store/auth-context";
+import { useLanguage } from "../../store/language-context";
+import { getErrorMessage } from "../../utils/get-error-message";
 import type { CredentialStatus } from "../../types/api";
 
 const credentialConfigs = {
@@ -151,6 +155,8 @@ const buildInitialDrafts = (): ProviderDrafts =>
 
 export const SettingsPage = () => {
   const { user, refreshUser } = useAuth();
+  const { t, language } = useLanguage();
+  const { success, error } = useAlerts();
   const [credentials, setCredentials] = useState<CredentialStatus[]>([]);
   const [profileForm, setProfileForm] = useState({
     fullName: user?.profile?.fullName ?? "",
@@ -158,6 +164,7 @@ export const SettingsPage = () => {
     bio: user?.profile?.bio ?? "",
     websiteUrl: user?.profile?.websiteUrl ?? "",
     preferredAi: user?.settings?.preferredAi ?? "",
+    preferredLanguage: user?.settings?.preferredLanguage ?? language,
     defaultChain: user?.settings?.defaultChain ?? "",
     timezone: user?.settings?.timezone ?? "",
     defaultImageWidth: user?.settings?.defaultImageWidth ?? 1024,
@@ -174,10 +181,12 @@ export const SettingsPage = () => {
     sampleReferenceUrls: (user?.promptProfile?.sampleReferenceUrls ?? []).join(", "),
     preferredAspectRatio: user?.promptProfile?.preferredAspectRatio ?? "1:1",
     preferredResolution: user?.promptProfile?.preferredResolution ?? "1024x1024",
-    preferredOpenAiModel: user?.promptProfile?.preferredOpenAiModel ?? "gpt-image-1",
+    preferredOpenAiModel: user?.promptProfile?.preferredOpenAiModel ?? "gpt-image-2",
     preferredGeminiModel: user?.promptProfile?.preferredGeminiModel ?? "gemini-2.5-flash-image-preview"
   });
   const [credentialDrafts, setCredentialDrafts] = useState<ProviderDrafts>(buildInitialDrafts);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [savingCredentialProvider, setSavingCredentialProvider] = useState<ProviderKey | null>(null);
 
   const loadCredentials = async () => setCredentials(await credentialsService.list());
 
@@ -192,6 +201,7 @@ export const SettingsPage = () => {
       bio: user?.profile?.bio ?? "",
       websiteUrl: user?.profile?.websiteUrl ?? "",
       preferredAi: user?.settings?.preferredAi ?? "",
+      preferredLanguage: user?.settings?.preferredLanguage ?? language,
       defaultChain: user?.settings?.defaultChain ?? "",
       timezone: user?.settings?.timezone ?? "",
       defaultImageWidth: user?.settings?.defaultImageWidth ?? 1024,
@@ -208,21 +218,30 @@ export const SettingsPage = () => {
       sampleReferenceUrls: (user?.promptProfile?.sampleReferenceUrls ?? []).join(", "),
       preferredAspectRatio: user?.promptProfile?.preferredAspectRatio ?? "1:1",
       preferredResolution: user?.promptProfile?.preferredResolution ?? "1024x1024",
-      preferredOpenAiModel: user?.promptProfile?.preferredOpenAiModel ?? "gpt-image-1",
+      preferredOpenAiModel: user?.promptProfile?.preferredOpenAiModel ?? "gpt-image-2",
       preferredGeminiModel: user?.promptProfile?.preferredGeminiModel ?? "gemini-2.5-flash-image-preview"
     });
   }, [user]);
 
   const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await usersService.updateSettings({
-      ...profileForm,
-      sampleReferenceUrls: profileForm.sampleReferenceUrls
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean)
-    });
-    await refreshUser();
+    setIsSavingProfile(true);
+
+    try {
+      await usersService.updateSettings({
+        ...profileForm,
+        sampleReferenceUrls: profileForm.sampleReferenceUrls
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      });
+      await refreshUser();
+      success(t("settingsSaved"));
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const updateCredentialField = (provider: ProviderKey, fieldKey: string, value: string) => {
@@ -248,79 +267,99 @@ export const SettingsPage = () => {
       return;
     }
 
-    await credentialsService.upsert(provider, {
-      values,
-      label: credentialConfigs[provider].label
-    });
-    setCredentialDrafts((current) => ({
-      ...current,
-      [provider]: Object.fromEntries(
-        credentialConfigs[provider].fields.map((field) => [
-          field.key,
-          provider === "IPFS" && field.key === "provider" ? current[provider][field.key] || "Pinata" : ""
-        ])
-      )
-    }));
-    await loadCredentials();
+    setSavingCredentialProvider(provider);
+
+    try {
+      await credentialsService.upsert(provider, {
+        values,
+        label: credentialConfigs[provider].label
+      });
+      setCredentialDrafts((current) => ({
+        ...current,
+        [provider]: Object.fromEntries(
+          credentialConfigs[provider].fields.map((field) => [
+            field.key,
+            provider === "IPFS" && field.key === "provider" ? current[provider][field.key] || "Pinata" : ""
+          ])
+        )
+      }));
+      await loadCredentials();
+      success(t("credentialSaved"));
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setSavingCredentialProvider(null);
+    }
   };
 
   return (
     <div className="stack">
       <header className="page-header">
         <div>
-          <p className="eyebrow">Account</p>
-          <h1>Settings & Integrations</h1>
+          <p className="eyebrow">{t("account")}</p>
+          <h1>{t("settingsAndIntegrations")}</h1>
         </div>
       </header>
 
       <div className="grid split-grid">
         <Card>
-          <h3>Profile settings</h3>
+          <h3>{t("profileSettings")}</h3>
           <form className="stack compact" onSubmit={saveProfile}>
-            <FormField label="Full name">
+            <FormField label={t("fullName")}>
               <input
                 value={profileForm.fullName}
                 onChange={(event) => setProfileForm((current) => ({ ...current, fullName: event.target.value }))}
               />
             </FormField>
-            <FormField label="Artist name">
+            <FormField label={t("artistName")}>
               <input
                 value={profileForm.artistName}
                 onChange={(event) => setProfileForm((current) => ({ ...current, artistName: event.target.value }))}
               />
             </FormField>
-            <FormField label="Artist bio">
+            <FormField label={t("artistBio")}>
               <textarea
                 value={profileForm.bio}
                 onChange={(event) => setProfileForm((current) => ({ ...current, bio: event.target.value }))}
               />
             </FormField>
-            <FormField label="Website / portfolio">
+            <FormField label={t("websitePortfolio")}>
               <input
                 type="url"
                 value={profileForm.websiteUrl}
                 onChange={(event) => setProfileForm((current) => ({ ...current, websiteUrl: event.target.value }))}
               />
             </FormField>
-            <FormField label="Preferred AI">
+            <FormField label={t("preferredAi")}>
               <input
                 value={profileForm.preferredAi}
                 onChange={(event) => setProfileForm((current) => ({ ...current, preferredAi: event.target.value }))}
               />
             </FormField>
-            <FormField label="Default chain">
+            <FormField label={t("preferredLanguage")}>
+              <select
+                value={profileForm.preferredLanguage}
+                onChange={(event) =>
+                  setProfileForm((current) => ({ ...current, preferredLanguage: event.target.value as "en" | "fa" }))
+                }
+              >
+                <option value="en">{t("english")}</option>
+                <option value="fa">{t("persian")}</option>
+              </select>
+            </FormField>
+            <FormField label={t("defaultChain")}>
               <input
                 value={profileForm.defaultChain}
                 onChange={(event) => setProfileForm((current) => ({ ...current, defaultChain: event.target.value }))}
               />
             </FormField>
-            <FormField label="Timezone">
+            <FormField label={t("timezone")}>
               <input
                 value={profileForm.timezone}
                 onChange={(event) => setProfileForm((current) => ({ ...current, timezone: event.target.value }))}
               />
             </FormField>
-            <FormField label="Default image width">
+            <FormField label={t("defaultImageWidth")}>
               <input
                 type="number"
                 min={256}
@@ -331,7 +370,7 @@ export const SettingsPage = () => {
                 }
               />
             </FormField>
-            <FormField label="Default image height">
+            <FormField label={t("defaultImageHeight")}>
               <input
                 type="number"
                 min={256}
@@ -342,25 +381,25 @@ export const SettingsPage = () => {
                 }
               />
             </FormField>
-            <FormField label="Artwork style">
+            <FormField label={t("artworkStyle")}>
               <textarea
                 value={profileForm.artworkStyle}
                 onChange={(event) => setProfileForm((current) => ({ ...current, artworkStyle: event.target.value }))}
               />
             </FormField>
-            <FormField label="Art vision">
+            <FormField label={t("artVision")}>
               <textarea
                 value={profileForm.artVision}
                 onChange={(event) => setProfileForm((current) => ({ ...current, artVision: event.target.value }))}
               />
             </FormField>
-            <FormField label="NFT vision">
+            <FormField label={t("nftVision")}>
               <textarea
                 value={profileForm.nftVision}
                 onChange={(event) => setProfileForm((current) => ({ ...current, nftVision: event.target.value }))}
               />
             </FormField>
-            <FormField label="Inspiration sources">
+            <FormField label={t("inspirationSources")}>
               <textarea
                 value={profileForm.inspirationSources}
                 onChange={(event) =>
@@ -368,7 +407,7 @@ export const SettingsPage = () => {
                 }
               />
             </FormField>
-            <FormField label="Signature motifs">
+            <FormField label={t("signatureMotifs")}>
               <textarea
                 value={profileForm.signatureMotifs}
                 onChange={(event) =>
@@ -376,19 +415,19 @@ export const SettingsPage = () => {
                 }
               />
             </FormField>
-            <FormField label="Color direction">
+            <FormField label={t("colorDirection")}>
               <textarea
                 value={profileForm.colorDirection}
                 onChange={(event) => setProfileForm((current) => ({ ...current, colorDirection: event.target.value }))}
               />
             </FormField>
-            <FormField label="Smart prompt base">
+            <FormField label={t("smartPromptBase")}>
               <textarea
                 value={profileForm.promptBase}
                 onChange={(event) => setProfileForm((current) => ({ ...current, promptBase: event.target.value }))}
               />
             </FormField>
-            <FormField label="Negative prompt base">
+            <FormField label={t("negativePromptBase")}>
               <textarea
                 value={profileForm.negativePromptBase}
                 onChange={(event) =>
@@ -396,13 +435,13 @@ export const SettingsPage = () => {
                 }
               />
             </FormField>
-            <FormField label="Creative rules">
+            <FormField label={t("creativeRules")}>
               <textarea
                 value={profileForm.creativeRules}
                 onChange={(event) => setProfileForm((current) => ({ ...current, creativeRules: event.target.value }))}
               />
             </FormField>
-            <FormField label="Sample reference URLs">
+            <FormField label={t("sampleReferenceUrls")}>
               <textarea
                 value={profileForm.sampleReferenceUrls}
                 onChange={(event) =>
@@ -410,7 +449,7 @@ export const SettingsPage = () => {
                 }
               />
             </FormField>
-            <FormField label="Preferred aspect ratio">
+            <FormField label={t("preferredAspectRatio")}>
               <input
                 value={profileForm.preferredAspectRatio}
                 onChange={(event) =>
@@ -418,7 +457,7 @@ export const SettingsPage = () => {
                 }
               />
             </FormField>
-            <FormField label="Preferred resolution">
+            <FormField label={t("preferredResolution")}>
               <input
                 value={profileForm.preferredResolution}
                 onChange={(event) =>
@@ -426,7 +465,7 @@ export const SettingsPage = () => {
                 }
               />
             </FormField>
-            <FormField label="Preferred OpenAI model">
+            <FormField label={t("preferredOpenAiModel")}>
               <input
                 value={profileForm.preferredOpenAiModel}
                 onChange={(event) =>
@@ -434,7 +473,7 @@ export const SettingsPage = () => {
                 }
               />
             </FormField>
-            <FormField label="Preferred Gemini model">
+            <FormField label={t("preferredGeminiModel")}>
               <input
                 value={profileForm.preferredGeminiModel}
                 onChange={(event) =>
@@ -442,12 +481,17 @@ export const SettingsPage = () => {
                 }
               />
             </FormField>
-            <button type="submit">Save settings</button>
+            <button type="submit" disabled={isSavingProfile}>
+              <span className="button-label">
+                {isSavingProfile ? <LoadingSpinner size="sm" /> : null}
+                {t("saveSettings")}
+              </span>
+            </button>
           </form>
         </Card>
 
         <Card>
-          <h3>Integrations</h3>
+          <h3>{t("integrations")}</h3>
           <div className="stack compact">
             {(Object.keys(credentialConfigs) as ProviderKey[]).map((provider) => {
               const existing = credentials.find((item) => item.provider === provider);
@@ -461,9 +505,11 @@ export const SettingsPage = () => {
                       <p className="muted">{config.description}</p>
                     </div>
                     <div className="provider-status">
-                      <span>{existing?.configured ? "Configured" : "Not configured"}</span>
+                      <span>{existing?.configured ? t("configured") : t("notConfigured")}</span>
                       {existing?.configuredFields.length ? (
-                        <span className="muted">{existing.configuredFields.length} field(s) saved</span>
+                        <span className="muted">
+                          {existing.configuredFields.length} {t("fieldsSaved")}
+                        </span>
                       ) : null}
                     </div>
                   </div>
@@ -485,9 +531,12 @@ export const SettingsPage = () => {
                       type="button"
                       className="secondary-button"
                       onClick={() => void saveCredential(provider)}
-                      disabled={!hasRequiredFields(provider)}
+                      disabled={!hasRequiredFields(provider) || savingCredentialProvider !== null}
                     >
-                      Save {config.title}
+                      <span className="button-label">
+                        {savingCredentialProvider === provider ? <LoadingSpinner size="sm" /> : null}
+                        Save {config.title}
+                      </span>
                     </button>
                   </div>
                 </div>

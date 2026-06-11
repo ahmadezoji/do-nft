@@ -81,6 +81,16 @@ export class CredentialsService {
     };
   }
 
+  async getProviderValues(userId: string, provider: CredentialProviderValue) {
+    const credential = await this.credentialsRepository.findByProvider(userId, provider);
+
+    if (!credential) {
+      return null;
+    }
+
+    return this.parseEncryptedValue(credential.encryptedValue);
+  }
+
   private sanitizeValues(values: CredentialValueMap) {
     return Object.fromEntries(
       Object.entries(values)
