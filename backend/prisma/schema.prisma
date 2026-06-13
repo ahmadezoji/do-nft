@@ -148,6 +148,9 @@ model Collection {
   id                String           @id @default(cuid())
   userId            String
   name              String
+  contractSymbol    String?
+  contractAddress   String?
+  deployTxHash      String?
   description       String
   theme             String?
   story             String?
@@ -155,6 +158,7 @@ model Collection {
   marketplaceTarget String?
   coverImageUrl     String?
   status            CollectionStatus @default(DRAFT)
+  deployedAt        DateTime?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -196,8 +200,15 @@ model Nft {
   referenceImageUrl String?
   outputWidth     Int?
   outputHeight    Int?
+  chain           String?
+  contractAddress String?
+  tokenId         String?
+  listingPriceEth String?
+  listingUrl      String?
+  metadataUri     String?
   ipfsImageCid    String?
   ipfsMetadataCid String?
+  mintTxHash      String?
   mintedAt        DateTime?
   listedAt        DateTime?
   createdAt       DateTime  @default(now())

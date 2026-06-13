@@ -203,6 +203,7 @@ export const NftStudioPage = () => {
       referenceImageUrl: form.referenceImageUrl || undefined,
       outputWidth: form.outputWidth,
       outputHeight: form.outputHeight,
+      ipfsImageCid: overrides?.ipfsImageCid ?? undefined,
       status:
         overrides?.status ??
         ((overrides?.imageUrl ?? generatedImageUrl)
@@ -292,11 +293,15 @@ export const NftStudioPage = () => {
         await persistStudioDraft({
           prompt: generatedPrompt,
           imageUrl: result.imageUrl,
+          ipfsImageCid: result.ipfsImageCid ?? undefined,
           aiModel: result.model ?? form.model,
           status: "IMAGE_GENERATED"
         });
       } catch (persistError) {
         warning(getErrorMessage(persistError, t("somethingWentWrong")));
+      }
+      if (!result.storedOnIpfs) {
+        warning(t("imageStoredLocallyOnly"));
       }
       success(t("imageReady"));
     } catch (caughtError) {

@@ -5,10 +5,12 @@ import { AppError } from "../errors/app-error.js";
 
 export const errorHandler = (
   error: Error,
-  _request: Request,
+  request: Request,
   response: Response,
   _next: NextFunction
 ) => {
+  console.error(`[${request.method} ${request.originalUrl}]`, error);
+
   if (error instanceof ZodError) {
     return response.status(400).json({
       message: "Validation failed",

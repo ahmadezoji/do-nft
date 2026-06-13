@@ -43,6 +43,15 @@ export const createNftSchema = z.object({
   referenceImageUrl: z.string().url().optional(),
   outputWidth: z.coerce.number().int().min(256).max(4096).optional(),
   outputHeight: z.coerce.number().int().min(256).max(4096).optional(),
+  chain: z.string().max(40).optional(),
+  contractAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/).optional(),
+  tokenId: z.string().max(120).optional(),
+  listingPriceEth: z.string().max(40).optional(),
+  listingUrl: z.string().url().optional(),
+  metadataUri: z.string().max(300).optional(),
+  ipfsImageCid: z.string().max(160).optional(),
+  ipfsMetadataCid: z.string().max(160).optional(),
+  mintTxHash: z.string().max(160).optional(),
   status: z.nativeEnum(NftStatus).optional()
 });
 

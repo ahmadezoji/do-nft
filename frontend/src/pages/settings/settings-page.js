@@ -40,7 +40,7 @@ const credentialConfigs = {
     },
     OPENSEA: {
         title: "OpenSea",
-        description: "Use your OpenSea developer API key for marketplace data and future listing actions.",
+        description: "Not required for Polygon publishing. OpenSea automatically indexes NFTs after on-chain minting.",
         label: "opensea credentials",
         fields: [
             {
@@ -49,6 +49,27 @@ const credentialConfigs = {
                 placeholder: "OpenSea API key",
                 type: "password",
                 required: true
+            },
+            {
+                key: "chain",
+                label: "Default chain",
+                placeholder: "ethereum",
+                type: "text",
+                required: false
+            },
+            {
+                key: "rpcUrl",
+                label: "RPC URL",
+                placeholder: "https://mainnet.infura.io/v3/...",
+                type: "url",
+                required: false
+            },
+            {
+                key: "walletPrivateKey",
+                label: "Seller wallet private key",
+                placeholder: "0x...",
+                type: "password",
+                required: false
             }
         ]
     },

@@ -8,7 +8,14 @@ export class DashboardService {
         prisma.collection.count({ where: { userId } }),
         prisma.nft.count({ where: { userId } }),
         prisma.nft.count({ where: { userId, status: NftStatus.DRAFT } }),
-        prisma.nft.count({ where: { userId, status: NftStatus.LISTED } }),
+        prisma.nft.count({
+          where: {
+            userId,
+            status: {
+              in: [NftStatus.MINTED, NftStatus.LISTED]
+            }
+          }
+        }),
         prisma.promotionCampaign.count({ where: { userId } }),
         prisma.nft.findMany({
           where: { userId },

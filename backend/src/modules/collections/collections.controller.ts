@@ -34,6 +34,11 @@ export class CollectionsController {
     response.json(result);
   };
 
+  deployContract = async (request: Request, response: Response) => {
+    const collection = await this.collectionsService.deployContract(request.auth!.userId, String(request.params.id));
+    response.json(collection);
+  };
+
   publish = async (request: Request, response: Response) => {
     const result = await this.collectionsService.publish(request.auth!.userId, String(request.params.id));
     response.json(result);

@@ -13,10 +13,11 @@ import type { Collection } from "../../types/api";
 
 const emptyForm = {
   name: "",
+  contractSymbol: "",
   description: "",
   theme: "",
   story: "",
-  blockchain: "Ethereum",
+  blockchain: "polygon",
   marketplaceTarget: "OpenSea"
 };
 
@@ -90,6 +91,13 @@ export const CollectionsPage = () => {
             <FormField label="Name">
               <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required />
             </FormField>
+            <FormField label="Contract symbol">
+              <input
+                value={form.contractSymbol}
+                onChange={(event) => setForm((current) => ({ ...current, contractSymbol: event.target.value.toUpperCase() }))}
+                placeholder="DONFT"
+              />
+            </FormField>
             <FormField label="Theme">
               <input value={form.theme} onChange={(event) => setForm((current) => ({ ...current, theme: event.target.value }))} />
             </FormField>
@@ -131,8 +139,8 @@ export const CollectionsPage = () => {
             {collections.length ? (
               collections.map((collection) => (
                 <Link key={collection.id} className="list-row" to={`/collections/${collection.id}`}>
-                  <span>{collection.name}</span>
-                  <span>{collection.status}</span>
+                  <span>{collection.name} {collection.contractSymbol ? `(${collection.contractSymbol})` : ""}</span>
+                  <span>{collection.contractAddress ? "Contract ready" : collection.status}</span>
                 </Link>
               ))
             ) : (

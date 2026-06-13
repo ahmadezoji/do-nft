@@ -62,6 +62,9 @@ export type BrandingProfile = {
 export type Collection = {
   id: string;
   name: string;
+  contractSymbol?: string | null;
+  contractAddress?: string | null;
+  deployTxHash?: string | null;
   description: string;
   theme?: string | null;
   story?: string | null;
@@ -70,6 +73,7 @@ export type Collection = {
   coverImageUrl?: string | null;
   status: string;
   nfts?: Nft[];
+  deployedAt?: string | null;
   updatedAt: string;
 };
 
@@ -89,6 +93,7 @@ export type PromptTemplate = {
 
 export type Nft = {
   id: string;
+  collectionId?: string | null;
   name: string;
   description?: string | null;
   customIdea?: string | null;
@@ -104,11 +109,27 @@ export type Nft = {
   referenceImageUrl?: string | null;
   outputWidth?: number | null;
   outputHeight?: number | null;
+  chain?: string | null;
+  contractAddress?: string | null;
+  tokenId?: string | null;
+  listingPriceEth?: string | null;
+  listingUrl?: string | null;
+  metadataUri?: string | null;
   collection?: Collection | null;
   template?: PromptTemplate | null;
   ipfsImageCid?: string | null;
   ipfsMetadataCid?: string | null;
+  mintTxHash?: string | null;
   updatedAt: string;
+};
+
+export type NftListingResult = {
+  nft: Nft;
+  listing: {
+    listingUrl: string;
+    status: string;
+    orderHash?: string | null;
+  };
 };
 
 export type PromotionPost = {

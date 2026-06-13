@@ -16,6 +16,7 @@ export const PublishingPage = () => {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [nfts, setNfts] = useState<Nft[]>([]);
   const [loadingCollectionId, setLoadingCollectionId] = useState("");
+  const [deployingCollectionId, setDeployingCollectionId] = useState("");
   const [loadingNftId, setLoadingNftId] = useState("");
 
   const load = async () => {
@@ -27,6 +28,20 @@ export const PublishingPage = () => {
   useEffect(() => {
     void load();
   }, []);
+
+  const deployCollection = async (collectionId: string) => {
+    setDeployingCollectionId(collectionId);
+
+    try {
+      await collectionsService.deployContract(collectionId);
+      await load();
+      success(t("contractDeployed"));
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setDeployingCollectionId("");
+    }
+  };
 
   const publishCollection = async (collectionId: string) => {
     setLoadingCollectionId(collectionId);
@@ -46,7 +61,17 @@ export const PublishingPage = () => {
     setLoadingNftId(nftId);
 
     try {
-      const currentNft = await nftsService.getById(nftId);
+      let currentNft = await nftsService.getById(nftId);
+
+      if (!currentNft.collectionId) {
+        error(t("publishRequiresCollection"));
+        return;
+      }
+
+      if (!currentNft.collection?.contractAddress) {
+        await collectionsService.deployContract(currentNft.collectionId);
+        currentNft = await nftsService.getById(nftId);
+      }
 
       if (!currentNft.ipfsMetadataCid) {
         await nftsService.uploadToIpfs(nftId);
@@ -54,7 +79,7 @@ export const PublishingPage = () => {
 
       await nftsService.listOnMarketplace(nftId);
       await load();
-      success(t("listingCompleted"));
+      success(t("mintCompleted"));
     } catch (caughtError) {
       error(getErrorMessage(caughtError, t("somethingWentWrong")));
     } finally {
@@ -77,7 +102,8 @@ export const PublishingPage = () => {
           <div className="stack compact">
             {collections.length ? (
               collections.map((collection) => {
-                const listedCount = collection.nfts?.filter((nft) => nft.status === "LISTED").length ?? 0;
+                const mintedCount =
+                  collection.nfts?.filter((nft) => nft.status === "MINTED" || nft.status === "LISTED").length ?? 0;
 
                 return (
                   <div key={collection.id} className="publish-item">
@@ -87,14 +113,39 @@ export const PublishingPage = () => {
                         <span className="muted">{collection.status}</span>
                       </div>
                       <span className="muted">
-                        {t("nftCount")}: {collection.nfts?.length ?? 0} · {t("listedCount")}: {listedCount}
+                        {t("nftCount")}: {collection.nfts?.length ?? 0} · {t("mintedCount")}: {mintedCount}
                       </span>
                     </div>
+                    <p className="muted">
+                      {collection.contractAddress
+                        ? `${t("contractReady")}: ${collection.contractAddress}`
+                        : t("contractNotDeployed")}
+                    </p>
                     <div className="button-row">
                       <button
                         type="button"
+                        className="secondary-button"
+                        onClick={() => void deployCollection(collection.id)}
+                        disabled={
+                          Boolean(collection.contractAddress) ||
+                          loadingCollectionId.length > 0 ||
+                          loadingNftId.length > 0 ||
+                          deployingCollectionId.length > 0
+                        }
+                      >
+                        <span className="button-label">
+                          {deployingCollectionId === collection.id ? <LoadingSpinner size="sm" /> : null}
+                          {t("deployContract")}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => void publishCollection(collection.id)}
-                        disabled={loadingCollectionId.length > 0 || loadingNftId.length > 0}
+                        disabled={
+                          loadingCollectionId.length > 0 ||
+                          loadingNftId.length > 0 ||
+                          deployingCollectionId.length > 0
+                        }
                       >
                         <span className="button-label">
                           {loadingCollectionId === collection.id ? <LoadingSpinner size="sm" /> : null}
@@ -127,15 +178,33 @@ export const PublishingPage = () => {
                     </div>
                     <span className="muted">{nft.status}</span>
                   </div>
+                  <p className="muted">
+                    {nft.collection?.contractAddress
+                      ? `${t("contractReady")}: ${nft.collection.contractAddress}`
+                      : nft.collectionId
+                        ? t("contractWillDeployOnPublish")
+                        : t("publishRequiresCollection")}
+                  </p>
+                  <p className="muted">{nft.ipfsMetadataCid ? t("ipfsReady") : t("ipfsWillUploadOnPublish")}</p>
+                  {nft.listingUrl ? (
+                    <a href={nft.listingUrl} target="_blank" rel="noreferrer">
+                      {t("viewOpenSeaListing")}
+                    </a>
+                  ) : null}
                   <div className="button-row">
                     <button
                       type="button"
                       onClick={() => void publishNft(nft.id)}
-                      disabled={!nft.imageUrl || loadingNftId.length > 0 || loadingCollectionId.length > 0}
+                      disabled={
+                        !nft.imageUrl ||
+                        loadingNftId.length > 0 ||
+                        loadingCollectionId.length > 0 ||
+                        deployingCollectionId.length > 0
+                      }
                     >
                       <span className="button-label">
                         {loadingNftId === nft.id ? <LoadingSpinner size="sm" /> : null}
-                        {t("publishNft")}
+                        {t("mintAndPublishNft")}
                       </span>
                     </button>
                     <Link className="secondary-button button-link" to={`/nfts/${nft.id}`}>

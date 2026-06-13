@@ -1,4 +1,4 @@
-import type { Nft, PromptTemplate } from "../types/api";
+import type { Nft, NftListingResult, PromptTemplate } from "../types/api";
 
 import { http } from "./http";
 
@@ -23,10 +23,14 @@ export const nftsService = {
     return data;
   },
   generateImage: async (payload: Record<string, string | number>) => {
-    const { data } = await http.post<{ imageUrl: string; provider: string; model?: string | null; status: string }>(
-      "/nfts/studio/image",
-      payload
-    );
+    const { data } = await http.post<{
+      imageUrl: string;
+      provider: string;
+      model?: string | null;
+      status: string;
+      ipfsImageCid?: string | null;
+      storedOnIpfs?: boolean;
+    }>("/nfts/studio/image", payload);
     return data;
   },
   create: async (payload: Record<string, unknown>) => {
@@ -42,7 +46,7 @@ export const nftsService = {
     return data;
   },
   listOnMarketplace: async (id: string) => {
-    const { data } = await http.post(`/nfts/${id}/list`);
+    const { data } = await http.post<NftListingResult>(`/nfts/${id}/list`);
     return data;
   }
 };

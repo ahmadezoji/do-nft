@@ -27,7 +27,8 @@ export const NftDetailPage = () => {
 
   useEffect(() => {
     setIsPreviewLoading(Boolean(nft?.imageUrl));
-  }, [nft?.imageUrl]);
+    setListingUrl(nft?.listingUrl ?? "");
+  }, [nft?.imageUrl, nft?.listingUrl]);
 
   const upload = async () => {
     setIsUploading(true);
@@ -50,7 +51,7 @@ export const NftDetailPage = () => {
       const result = await nftsService.listOnMarketplace(id);
       setListingUrl(result.listing.listingUrl);
       await load();
-      success(t("listingCompleted"));
+      success(t("mintCompleted"));
     } catch (caughtError) {
       error(getErrorMessage(caughtError, t("somethingWentWrong")));
     } finally {
@@ -101,6 +102,11 @@ export const NftDetailPage = () => {
             <p className="muted">
               Resolution: {nft.outputWidth || 1024} x {nft.outputHeight || 1024}
             </p>
+            <p className="muted">Chain: {nft.chain || "Not set"}</p>
+            <p className="muted">Contract address: {nft.contractAddress || "Not set"}</p>
+            <p className="muted">Token ID: {nft.tokenId || "Not set"}</p>
+            <p className="muted">Metadata URI: {nft.metadataUri || "Not uploaded"}</p>
+            <p className="muted">Mint tx hash: {nft.mintTxHash || "Not minted"}</p>
             <p className="muted">
               References: {nft.referenceUrls?.length ? nft.referenceUrls.join(", ") : "No reference URLs"}
             </p>
@@ -122,7 +128,7 @@ export const NftDetailPage = () => {
               <button type="button" onClick={() => void list()} disabled={isListing || isUploading}>
                 <span className="button-label">
                   {isListing ? <LoadingSpinner size="sm" /> : null}
-                  List on marketplace
+                  Mint on Polygon
                 </span>
               </button>
             </div>

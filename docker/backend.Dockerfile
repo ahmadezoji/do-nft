@@ -7,6 +7,7 @@ RUN apt-get update -y \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package.json ./
+COPY package-lock.json ./
 COPY tsconfig.base.json ./
 COPY backend/package.json ./backend/package.json
 COPY frontend/package.json ./frontend/package.json
