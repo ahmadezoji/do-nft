@@ -6,6 +6,7 @@ import { env } from "./config/env.js";
 import { errorHandler } from "./common/middleware/error-handler.js";
 import { notFoundHandler } from "./common/middleware/not-found.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
+import { autoPromoterRouter } from "./modules/auto-promoter/auto-promoter.routes.js";
 import { brandingRouter } from "./modules/branding/branding.routes.js";
 import { collectionsRouter } from "./modules/collections/collections.routes.js";
 import { credentialsRouter } from "./modules/credentials/credentials.routes.js";
@@ -40,6 +41,7 @@ app.use("/api/nfts", nftsRouter);
 app.use("/api/promotions", promotionsRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/marketplace", marketplaceRouter);
+app.use("/api/auto-promoter", autoPromoterRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

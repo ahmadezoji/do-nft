@@ -139,6 +139,8 @@ export type PromotionPost = {
   content: string;
   hashtags: string[];
   status: string;
+  externalPostId?: string | null;
+  externalUrl?: string | null;
 };
 
 export type PromotionCampaign = {
@@ -149,6 +151,28 @@ export type PromotionCampaign = {
   nft?: Nft | null;
   posts: PromotionPost[];
   updatedAt: string;
+};
+
+export type AutoPromoterSettings = {
+  id: string | null;
+  userId: string;
+  enabled: boolean;
+  collectionId?: string | null;
+  keywords: string[];
+  intervalMinutes: number;
+  lastRunAt?: string | null;
+};
+
+export type AutoPromoterLogEntry = {
+  id: string;
+  type: string;
+  status: string;
+  message: string;
+  targetHandle?: string | null;
+  targetTweetId?: string | null;
+  targetUrl?: string | null;
+  suggestedAction?: { type: string; tweetId: string } | null;
+  createdAt: string;
 };
 
 export type DashboardSummary = {

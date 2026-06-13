@@ -25,6 +25,7 @@ router.post("/", validateRequest(createNftSchema), asyncHandler(controller.creat
 router.get("/:id", asyncHandler(controller.getById));
 router.put("/:id", validateRequest(updateNftSchema), asyncHandler(controller.update));
 router.post("/:id/ipfs", asyncHandler(controller.uploadToIpfs));
+router.post("/:id/mint", asyncHandler(controller.mintNft));
 router.post("/:id/list", validateRequest(listOnMarketplaceSchema), asyncHandler(controller.listOnMarketplace));
 router.post("/:id/unlist", asyncHandler(controller.unlistFromMarketplace));
 

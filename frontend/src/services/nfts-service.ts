@@ -45,6 +45,10 @@ export const nftsService = {
     const { data } = await http.post<Nft>(`/nfts/${id}/ipfs`);
     return data;
   },
+  mintNft: async (id: string) => {
+    const { data } = await http.post<Nft>(`/nfts/${id}/mint`);
+    return data;
+  },
   listOnMarketplace: async (id: string, priceEth: string) => {
     const { data } = await http.post<NftListingResult>(`/nfts/${id}/list`, { priceEth });
     return data;

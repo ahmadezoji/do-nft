@@ -15,6 +15,7 @@ export const PromotionsPage = () => {
   const [campaigns, setCampaigns] = useState<PromotionCampaign[]>([]);
   const [nfts, setNfts] = useState<Nft[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [publishingPostId, setPublishingPostId] = useState("");
   const { success, error } = useAlerts();
   const { t } = useLanguage();
   const [form, setForm] = useState({
@@ -37,6 +38,20 @@ export const PromotionsPage = () => {
   useEffect(() => {
     void load();
   }, []);
+
+  const publishPost = async (campaignId: string, postId: string) => {
+    setPublishingPostId(postId);
+
+    try {
+      await promotionsService.publishPost(campaignId, postId);
+      await load();
+      success(t("postPublished"));
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setPublishingPostId("");
+    }
+  };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -134,6 +149,24 @@ export const PromotionsPage = () => {
                       <span className="eyebrow">{post.platform}</span>
                       <p>{post.content}</p>
                       <p className="muted">{post.hashtags.join(" ")}</p>
+                      {post.platform === "TWITTER" ? (
+                        post.status === "POSTED" && post.externalUrl ? (
+                          <a href={post.externalUrl} target="_blank" rel="noreferrer">
+                            {t("viewOnX")}
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => publishPost(campaign.id, post.id)}
+                            disabled={publishingPostId === post.id}
+                          >
+                            <span className="button-label">
+                              {publishingPostId === post.id ? <LoadingSpinner size="sm" /> : null}
+                              {t("postToX")}
+                            </span>
+                          </button>
+                        )
+                      ) : null}
                     </div>
                   ))}
                 </div>

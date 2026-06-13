@@ -1,14 +1,16 @@
 import { AppError } from "../../common/errors/app-error.js";
-import { PromotionCampaignStatus } from "../../common/constants/domain-enums.js";
+import { Platform, PromotionCampaignStatus } from "../../common/constants/domain-enums.js";
 import { prisma } from "../../database/prisma.js";
 import { AiService } from "../ai/ai.service.js";
+import { XService } from "../x/x.service.js";
 
 import { PromotionsRepository } from "./promotions.repository.js";
 
 export class PromotionsService {
   constructor(
     private readonly promotionsRepository = new PromotionsRepository(),
-    private readonly aiService = new AiService()
+    private readonly aiService = new AiService(),
+    private readonly xService = new XService()
   ) {}
 
   list(userId: string) {
@@ -45,5 +47,36 @@ export class PromotionsService {
         status: PromotionCampaignStatus.GENERATED
       }))
     });
+  }
+
+  async publishPost(userId: string, campaignId: string, postId: string) {
+    const campaign = await this.promotionsRepository.findCampaignWithPost(userId, campaignId, postId);
+    const post = campaign?.posts[0];
+
+    if (!campaign || !post) {
+      throw new AppError("Promotion post not found", 404);
+    }
+
+    if (post.platform !== Platform.TWITTER) {
+      throw new AppError("Only X (Twitter) posts can be published from here.", 400);
+    }
+
+    const text = `${post.content}\n\n${post.hashtags.join(" ")}`.trim().slice(0, 280);
+
+    try {
+      const tweet = await this.xService.postTweet(userId, text);
+
+      return this.promotionsRepository.updatePostResult(postId, {
+        status: PromotionCampaignStatus.POSTED,
+        externalPostId: tweet.id,
+        externalUrl: tweet.url
+      });
+    } catch (caughtError) {
+      await this.promotionsRepository.updatePostResult(postId, {
+        status: PromotionCampaignStatus.FAILED
+      });
+
+      throw caughtError;
+    }
   }
 }

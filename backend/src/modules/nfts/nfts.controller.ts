@@ -37,6 +37,10 @@ export class NftsController {
     response.json(await this.nftsService.uploadToIpfs(request.auth!.userId, String(request.params.id)));
   };
 
+  mintNft = async (request: Request, response: Response) => {
+    response.json(await this.nftsService.mintNft(request.auth!.userId, String(request.params.id)));
+  };
+
   listOnMarketplace = async (request: Request, response: Response) => {
     response.json(
       await this.nftsService.listOnMarketplace(

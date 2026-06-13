@@ -14,6 +14,31 @@ export class PromotionsRepository {
     });
   }
 
+  findCampaignWithPost(userId: string, campaignId: string, postId: string) {
+    return prisma.promotionCampaign.findFirst({
+      where: { id: campaignId, userId },
+      include: {
+        posts: {
+          where: { id: postId }
+        }
+      }
+    });
+  }
+
+  updatePostResult(
+    postId: string,
+    data: { status: string; externalPostId?: string | null; externalUrl?: string | null }
+  ) {
+    return prisma.promotionPost.update({
+      where: { id: postId },
+      data: {
+        status: data.status as never,
+        externalPostId: data.externalPostId,
+        externalUrl: data.externalUrl
+      }
+    });
+  }
+
   createCampaign(
     userId: string,
     input: {

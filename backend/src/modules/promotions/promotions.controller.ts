@@ -12,4 +12,14 @@ export class PromotionsController {
   create = async (request: Request, response: Response) => {
     response.status(201).json(await this.promotionsService.create(request.auth!.userId, request.body));
   };
+
+  publishPost = async (request: Request, response: Response) => {
+    response.json(
+      await this.promotionsService.publishPost(
+        request.auth!.userId,
+        String(request.params.campaignId),
+        String(request.params.postId)
+      )
+    );
+  };
 }

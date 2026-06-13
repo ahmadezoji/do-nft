@@ -12,6 +12,7 @@ export const AppNav = () => {
     { to: "/collections", label: t("collections") },
     { to: "/nft-studio", label: t("nftStudio") },
     { to: "/promotions", label: t("promotions") },
+    { to: "/auto-promoter", label: t("autoPromoter") },
     { to: "/publishing", label: t("publishing") }
   ];
 

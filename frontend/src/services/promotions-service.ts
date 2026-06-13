@@ -1,4 +1,4 @@
-import type { PromotionCampaign } from "../types/api";
+import type { PromotionCampaign, PromotionPost } from "../types/api";
 
 import { http } from "./http";
 
@@ -9,6 +9,10 @@ export const promotionsService = {
   },
   create: async (payload: Record<string, unknown>) => {
     const { data } = await http.post<PromotionCampaign>("/promotions", payload);
+    return data;
+  },
+  publishPost: async (campaignId: string, postId: string) => {
+    const { data } = await http.post<PromotionPost>(`/promotions/${campaignId}/posts/${postId}/publish`);
     return data;
   }
 };

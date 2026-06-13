@@ -11,3 +11,4 @@ coverage
 backend/generated
 backend/prisma/dev.db
 .env.example
+*.log

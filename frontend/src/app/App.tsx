@@ -12,6 +12,7 @@ import { RegisterPage } from "../pages/auth/register-page";
 import { NftDetailPage } from "../pages/nfts/nft-detail-page";
 import { NftStudioPage } from "../pages/nfts/nft-studio-page";
 import { PublishingPage } from "../pages/publishing/publishing-page";
+import { AutoPromoterPage } from "../pages/promotions/auto-promoter-page";
 import { PromotionsPage } from "../pages/promotions/promotions-page";
 import { SettingsPage } from "../pages/settings/settings-page";
 import { useAuth } from "../store/auth-context";
@@ -54,6 +55,7 @@ export const App = () => (
         <Route path="/nft-studio" element={<NftStudioPage />} />
         <Route path="/nfts/:id" element={<NftDetailPage />} />
         <Route path="/promotions" element={<PromotionsPage />} />
+        <Route path="/auto-promoter" element={<AutoPromoterPage />} />
         <Route path="/publishing" element={<PublishingPage />} />
       </Route>
     </Routes>

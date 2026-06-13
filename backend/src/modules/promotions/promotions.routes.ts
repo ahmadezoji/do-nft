@@ -13,5 +13,6 @@ const controller = new PromotionsController();
 router.use(requireAuth);
 router.get("/", asyncHandler(controller.list));
 router.post("/", validateRequest(createPromotionSchema), asyncHandler(controller.create));
+router.post("/:campaignId/posts/:postId/publish", asyncHandler(controller.publishPost));
 
 export const promotionsRouter = router;

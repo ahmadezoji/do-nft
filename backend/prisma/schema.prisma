@@ -49,6 +49,22 @@ enum PromotionCampaignStatus {
   FAILED
 }
 
+enum AutoPromoterLogType {
+  INFO
+  DISCOVERY
+  SUGGESTION
+  ACTION
+  ERROR
+}
+
+enum AutoPromoterLogStatus {
+  PENDING
+  APPROVED
+  DISMISSED
+  SENT
+  FAILED
+}
+
 model User {
   id               String             @id @default(cuid())
   email            String             @unique
@@ -63,6 +79,8 @@ model User {
   collections      Collection[]
   nfts             Nft[]
   campaigns        PromotionCampaign[]
+  autoPromoterSettings AutoPromoterSettings?
+  autoPromoterLogs     AutoPromoterLogEntry[]
 }
 
 model UserProfile {
@@ -236,13 +254,42 @@ model PromotionCampaign {
 }
 
 model PromotionPost {
-  id         String                  @id @default(cuid())
-  campaignId String
-  platform   Platform
-  content    String
-  hashtags   String[]
-  status     PromotionCampaignStatus @default(DRAFT)
-  createdAt  DateTime                @default(now())
-  updatedAt  DateTime                @updatedAt
-  campaign   PromotionCampaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  id           String                  @id @default(cuid())
+  campaignId   String
+  platform     Platform
+  content      String
+  hashtags     String[]
+  status       PromotionCampaignStatus @default(DRAFT)
+  externalPostId String?
+  externalUrl  String?
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+  campaign     PromotionCampaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+model AutoPromoterSettings {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  enabled         Boolean   @default(false)
+  collectionId    String?
+  keywords        String[]
+  intervalMinutes Int       @default(60)
+  lastRunAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AutoPromoterLogEntry {
+  id              String                @id @default(cuid())
+  userId          String
+  type            AutoPromoterLogType
+  status          AutoPromoterLogStatus @default(PENDING)
+  message         String
+  targetHandle    String?
+  targetTweetId   String?
+  targetUrl       String?
+  suggestedAction Json?
+  createdAt       DateTime              @default(now())
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

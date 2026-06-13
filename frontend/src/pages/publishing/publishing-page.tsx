@@ -77,7 +77,7 @@ export const PublishingPage = () => {
         await nftsService.uploadToIpfs(nftId);
       }
 
-      await nftsService.listOnMarketplace(nftId);
+      await nftsService.mintNft(nftId);
       await load();
       success(t("mintCompleted"));
     } catch (caughtError) {

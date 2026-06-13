@@ -38,3 +38,19 @@ export const Platform = {
   TELEGRAM: "TELEGRAM",
   FARCASTER: "FARCASTER"
 } as const;
+
+export const AutoPromoterLogType = {
+  INFO: "INFO",
+  DISCOVERY: "DISCOVERY",
+  SUGGESTION: "SUGGESTION",
+  ACTION: "ACTION",
+  ERROR: "ERROR"
+} as const;
+
+export const AutoPromoterLogStatus = {
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  DISMISSED: "DISMISSED",
+  SENT: "SENT",
+  FAILED: "FAILED"
+} as const;
