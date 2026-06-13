@@ -6,6 +6,7 @@ import { LoadingSpinner } from "../../components/common/loading-spinner";
 import { FormField } from "../../components/forms/form-field";
 import { credentialsService } from "../../services/credentials-service";
 import { usersService } from "../../services/users-service";
+import { xService } from "../../services/x-service";
 import { useAlerts } from "../../store/alert-context";
 import { useAuth } from "../../store/auth-context";
 import { useLanguage } from "../../store/language-context";
@@ -107,7 +108,7 @@ const credentialConfigs = {
   TWITTER: {
     title: "X / Twitter",
     description:
-      "For real posting flows, use OAuth 1.0a user credentials. Bearer token alone is not enough for write actions.",
+      "Save your Consumer key/secret, then use \"Connect with X\" to authorize posting without pasting access tokens.",
     label: "x credentials",
     fields: [
       {
@@ -127,16 +128,16 @@ const credentialConfigs = {
       {
         key: "accessToken",
         label: "Access token",
-        placeholder: "User access token",
+        placeholder: "User access token (or use Connect with X)",
         type: "password",
-        required: true
+        required: false
       },
       {
         key: "accessTokenSecret",
         label: "Access token secret",
-        placeholder: "User access token secret",
+        placeholder: "User access token secret (or use Connect with X)",
         type: "password",
-        required: true
+        required: false
       },
       {
         key: "bearerToken",
@@ -208,12 +209,48 @@ export const SettingsPage = () => {
   const [credentialDrafts, setCredentialDrafts] = useState<ProviderDrafts>(buildInitialDrafts);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [savingCredentialProvider, setSavingCredentialProvider] = useState<ProviderKey | null>(null);
+  const [isConnectingX, setIsConnectingX] = useState(false);
 
   const loadCredentials = async () => setCredentials(await credentialsService.list());
 
   useEffect(() => {
     void loadCredentials();
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("x");
+
+    if (!status) {
+      return;
+    }
+
+    if (status === "connected") {
+      success(t("xConnected"));
+      void loadCredentials();
+    } else if (status === "denied") {
+      error(t("xConnectionDenied"));
+    } else {
+      error(t("xConnectionError"));
+    }
+
+    params.delete("x");
+    const remaining = params.toString();
+    window.history.replaceState({}, "", `${window.location.pathname}${remaining ? `?${remaining}` : ""}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const connectX = async () => {
+    setIsConnectingX(true);
+
+    try {
+      const { url } = await xService.startOAuth();
+      window.location.href = url;
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+      setIsConnectingX(false);
+    }
+  };
 
   useEffect(() => {
     setProfileForm({
@@ -559,6 +596,23 @@ export const SettingsPage = () => {
                         Save {config.title}
                       </span>
                     </button>
+                    {provider === "TWITTER" ? (
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => void connectX()}
+                        disabled={
+                          !existing?.configuredFields.includes("apiKey") ||
+                          !existing?.configuredFields.includes("apiSecret") ||
+                          isConnectingX
+                        }
+                      >
+                        <span className="button-label">
+                          {isConnectingX ? <LoadingSpinner size="sm" /> : null}
+                          {t("connectWithX")}
+                        </span>
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               );

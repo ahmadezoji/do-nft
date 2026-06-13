@@ -15,8 +15,11 @@ import { marketplaceRouter } from "./modules/marketplace/marketplace.routes.js";
 import { nftsRouter } from "./modules/nfts/nfts.routes.js";
 import { promotionsRouter } from "./modules/promotions/promotions.routes.js";
 import { usersRouter } from "./modules/users/users.routes.js";
+import { xRouter } from "./modules/x/x.routes.js";
 
 export const app = express();
+
+app.set("trust proxy", 1);
 
 app.use(
   cors({
@@ -42,6 +45,7 @@ app.use("/api/promotions", promotionsRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/marketplace", marketplaceRouter);
 app.use("/api/auto-promoter", autoPromoterRouter);
+app.use("/api/x", xRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

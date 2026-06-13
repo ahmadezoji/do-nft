@@ -22,7 +22,7 @@ const requiredCredentialFields: Record<CredentialProviderValue, string[]> = {
   [CredentialProvider.GEMINI]: ["apiKey"],
   [CredentialProvider.OPENSEA]: ["apiKey"],
   [CredentialProvider.IPFS]: ["provider", "jwt"],
-  [CredentialProvider.TWITTER]: ["apiKey", "apiSecret", "accessToken", "accessTokenSecret"],
+  [CredentialProvider.TWITTER]: ["apiKey", "apiSecret"],
   [CredentialProvider.DISCORD]: ["webhookUrl"]
 };
 
