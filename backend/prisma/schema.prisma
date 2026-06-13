@@ -204,6 +204,7 @@ model Nft {
   contractAddress String?
   tokenId         String?
   listingPriceEth String?
+  listingOrderHash String?
   listingUrl      String?
   metadataUri     String?
   ipfsImageCid    String?

@@ -104,7 +104,7 @@ const loadArtifact = async () => {
 };
 
 export class BlockchainService {
-  private getClients() {
+  getClients() {
     if (!env.ALCHEMY_RPC_URL || !env.WALLET_PRIVATE_KEY) {
       throw new AppError(
         "Blockchain publishing is not configured. Add ALCHEMY_RPC_URL and WALLET_PRIVATE_KEY to the backend environment.",

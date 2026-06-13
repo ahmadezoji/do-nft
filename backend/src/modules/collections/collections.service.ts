@@ -154,8 +154,7 @@ export class CollectionsService {
       }
 
       if (currentNft.status !== NftStatus.MINTED && currentNft.status !== NftStatus.LISTED) {
-        const listing = await this.nftsService.listOnMarketplace(userId, currentNft.id);
-        currentNft = listing.nft as PublishableNft;
+        currentNft = (await this.nftsService.mintNft(userId, currentNft.id)) as PublishableNft;
       }
 
       publishedNfts.push(currentNft);

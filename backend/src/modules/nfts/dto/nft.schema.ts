@@ -56,3 +56,7 @@ export const createNftSchema = z.object({
 });
 
 export const updateNftSchema = createNftSchema.partial();
+
+export const listOnMarketplaceSchema = z.object({
+  priceEth: z.string().regex(/^\d*\.?\d+$/, "priceEth must be a positive decimal string")
+});

@@ -4,13 +4,16 @@ import { Link } from "react-router-dom";
 import { Card } from "../../components/common/card";
 import { StatCard } from "../../components/common/stat-card";
 import { dashboardService } from "../../services/dashboard-service";
-import type { DashboardSummary } from "../../types/api";
+import { marketplaceService } from "../../services/marketplace-service";
+import type { DashboardSummary, TrendingCollectionsResult } from "../../types/api";
 
 export const DashboardPage = () => {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [trending, setTrending] = useState<TrendingCollectionsResult | null>(null);
 
   useEffect(() => {
     void dashboardService.summary().then(setSummary);
+    void marketplaceService.getTrendingCollections().then(setTrending);
   }, []);
 
   return (
@@ -66,6 +69,26 @@ export const DashboardPage = () => {
           </div>
         </Card>
       </div>
+
+      <Card>
+        <h3>Trending on OpenSea (Polygon)</h3>
+        <div className="stack compact">
+          {trending?.items.length ? (
+            trending.items.map((item) => (
+              <a key={item.slug} href={item.openseaUrl} target="_blank" rel="noreferrer" className="list-row">
+                <span>{item.name}</span>
+                <span className="muted">
+                  Floor: {item.floorPriceEth ?? "?"} POL · 7d volume: {item.sevenDayVolumeEth ?? "?"} POL
+                </span>
+              </a>
+            ))
+          ) : (
+            <p className="muted">
+              {trending?.error ?? "No trending collections available right now."}
+            </p>
+          )}
+        </div>
+      </Card>
     </div>
   );
 };

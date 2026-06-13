@@ -13,8 +13,10 @@ export const NftDetailPage = () => {
   const { id = "" } = useParams();
   const [nft, setNft] = useState<Nft | null>(null);
   const [listingUrl, setListingUrl] = useState("");
+  const [priceEth, setPriceEth] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isListing, setIsListing] = useState(false);
+  const [isUnlisting, setIsUnlisting] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const { success, error } = useAlerts();
   const { t } = useLanguage();
@@ -28,7 +30,8 @@ export const NftDetailPage = () => {
   useEffect(() => {
     setIsPreviewLoading(Boolean(nft?.imageUrl));
     setListingUrl(nft?.listingUrl ?? "");
-  }, [nft?.imageUrl, nft?.listingUrl]);
+    setPriceEth(nft?.listingPriceEth ?? "");
+  }, [nft?.imageUrl, nft?.listingUrl, nft?.listingPriceEth]);
 
   const upload = async () => {
     setIsUploading(true);
@@ -44,11 +47,11 @@ export const NftDetailPage = () => {
     }
   };
 
-  const list = async () => {
+  const mint = async () => {
     setIsListing(true);
 
     try {
-      const result = await nftsService.listOnMarketplace(id);
+      const result = await nftsService.listOnMarketplace(id, priceEth || "0");
       setListingUrl(result.listing.listingUrl);
       await load();
       success(t("mintCompleted"));
@@ -56,6 +59,40 @@ export const NftDetailPage = () => {
       error(getErrorMessage(caughtError, t("somethingWentWrong")));
     } finally {
       setIsListing(false);
+    }
+  };
+
+  const listForSale = async () => {
+    if (!priceEth) {
+      error(t("somethingWentWrong"));
+      return;
+    }
+
+    setIsListing(true);
+
+    try {
+      const result = await nftsService.listOnMarketplace(id, priceEth);
+      setListingUrl(result.listing.listingUrl);
+      await load();
+      success(t("listingCompleted"));
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setIsListing(false);
+    }
+  };
+
+  const unlist = async () => {
+    setIsUnlisting(true);
+
+    try {
+      await nftsService.unlistFromMarketplace(id);
+      await load();
+      success(t("unlistingCompleted"));
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setIsUnlisting(false);
     }
   };
 
@@ -113,6 +150,9 @@ export const NftDetailPage = () => {
             <p className="muted">Sample image URL: {nft.referenceImageUrl || "No sample image URL"}</p>
             <p className="muted">IPFS image CID: {nft.ipfsImageCid || "Not uploaded"}</p>
             <p className="muted">IPFS metadata CID: {nft.ipfsMetadataCid || "Not uploaded"}</p>
+            {nft.status === "LISTED" ? (
+              <p className="muted">Listed for {nft.listingPriceEth ?? "?"} POL</p>
+            ) : null}
             {listingUrl ? (
               <a href={listingUrl} target="_blank" rel="noreferrer">
                 View listing
@@ -125,13 +165,44 @@ export const NftDetailPage = () => {
                   Upload to IPFS
                 </span>
               </button>
-              <button type="button" onClick={() => void list()} disabled={isListing || isUploading}>
-                <span className="button-label">
-                  {isListing ? <LoadingSpinner size="sm" /> : null}
-                  Mint on Polygon
-                </span>
-              </button>
+              {nft.status === "MINTED" || nft.status === "LISTED" ? null : (
+                <button type="button" onClick={() => void mint()} disabled={isListing || isUploading}>
+                  <span className="button-label">
+                    {isListing ? <LoadingSpinner size="sm" /> : null}
+                    Mint on Polygon
+                  </span>
+                </button>
+              )}
             </div>
+            {nft.status === "MINTED" || nft.status === "LISTED" ? (
+              <div className="button-row">
+                <input
+                  type="text"
+                  value={priceEth}
+                  onChange={(event) => setPriceEth(event.target.value)}
+                  placeholder="Price in POL"
+                />
+                <button type="button" onClick={() => void listForSale()} disabled={isListing || isUnlisting}>
+                  <span className="button-label">
+                    {isListing ? <LoadingSpinner size="sm" /> : null}
+                    {nft.status === "LISTED" ? "Update price" : "List for sale"}
+                  </span>
+                </button>
+                {nft.status === "LISTED" ? (
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => void unlist()}
+                    disabled={isListing || isUnlisting}
+                  >
+                    <span className="button-label">
+                      {isUnlisting ? <LoadingSpinner size="sm" /> : null}
+                      Unlist
+                    </span>
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </Card>
       </div>

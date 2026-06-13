@@ -10,6 +10,7 @@ import { brandingRouter } from "./modules/branding/branding.routes.js";
 import { collectionsRouter } from "./modules/collections/collections.routes.js";
 import { credentialsRouter } from "./modules/credentials/credentials.routes.js";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes.js";
+import { marketplaceRouter } from "./modules/marketplace/marketplace.routes.js";
 import { nftsRouter } from "./modules/nfts/nfts.routes.js";
 import { promotionsRouter } from "./modules/promotions/promotions.routes.js";
 import { usersRouter } from "./modules/users/users.routes.js";
@@ -38,6 +39,7 @@ app.use("/api/collections", collectionsRouter);
 app.use("/api/nfts", nftsRouter);
 app.use("/api/promotions", promotionsRouter);
 app.use("/api/dashboard", dashboardRouter);
+app.use("/api/marketplace", marketplaceRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

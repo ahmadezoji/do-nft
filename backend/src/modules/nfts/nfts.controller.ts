@@ -38,6 +38,16 @@ export class NftsController {
   };
 
   listOnMarketplace = async (request: Request, response: Response) => {
-    response.json(await this.nftsService.listOnMarketplace(request.auth!.userId, String(request.params.id)));
+    response.json(
+      await this.nftsService.listOnMarketplace(
+        request.auth!.userId,
+        String(request.params.id),
+        String(request.body.priceEth)
+      )
+    );
+  };
+
+  unlistFromMarketplace = async (request: Request, response: Response) => {
+    response.json(await this.nftsService.unlistFromMarketplace(request.auth!.userId, String(request.params.id)));
   };
 }

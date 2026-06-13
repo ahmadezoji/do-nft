@@ -113,6 +113,7 @@ export type Nft = {
   contractAddress?: string | null;
   tokenId?: string | null;
   listingPriceEth?: string | null;
+  listingOrderHash?: string | null;
   listingUrl?: string | null;
   metadataUri?: string | null;
   collection?: Collection | null;
@@ -163,4 +164,18 @@ export type DashboardSummary = {
     provider: string;
     updatedAt: string;
   }>;
+};
+
+export type TrendingCollection = {
+  slug: string;
+  name: string;
+  imageUrl?: string | null;
+  openseaUrl: string;
+  floorPriceEth?: number | null;
+  sevenDayVolumeEth?: number | null;
+};
+
+export type TrendingCollectionsResult = {
+  items: TrendingCollection[];
+  error?: string;
 };

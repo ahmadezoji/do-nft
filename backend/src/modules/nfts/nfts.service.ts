@@ -5,6 +5,7 @@ import { NftStatus } from "../../common/constants/domain-enums.js";
 import { AiService } from "../ai/ai.service.js";
 import { BlockchainService } from "../blockchain/blockchain.service.js";
 import { IpfsService } from "../ipfs/ipfs.service.js";
+import { MarketplaceService } from "../marketplace/marketplace.service.js";
 
 import { defaultTemplates } from "./default-templates.js";
 import { NftsRepository } from "./nfts.repository.js";
@@ -21,7 +22,9 @@ type MintableNft = {
   metadataUri?: string | null;
   mintTxHash?: string | null;
   tokenId?: string | null;
+  contractAddress?: string | null;
   listingUrl?: string | null;
+  listingOrderHash?: string | null;
   collection?: {
     contractAddress?: string | null;
   } | null;
@@ -32,7 +35,8 @@ export class NftsService {
     private readonly nftsRepository = new NftsRepository(),
     private readonly aiService = new AiService(),
     private readonly ipfsService = new IpfsService(),
-    private readonly blockchainService = new BlockchainService()
+    private readonly blockchainService = new BlockchainService(),
+    private readonly marketplaceService = new MarketplaceService()
   ) {}
 
   list(userId: string) {
@@ -174,27 +178,18 @@ export class NftsService {
     return updatedNft;
   }
 
-  async listOnMarketplace(userId: string, nftId: string) {
+  async mintNft(userId: string, nftId: string) {
     const nft = (await this.getById(userId, nftId)) as MintableNft & {
       collectionId?: string | null;
       status: string;
       id: string;
       tokenId?: string | null;
+      contractAddress?: string | null;
       listingUrl?: string | null;
+      listingOrderHash?: string | null;
       name: string;
       ipfsMetadataCid?: string | null;
     };
-
-    if ((nft.status === NftStatus.MINTED || nft.status === NftStatus.LISTED) && nft.tokenId && nft.listingUrl) {
-      return {
-        nft,
-        listing: {
-          listingUrl: nft.listingUrl,
-          status: "minted",
-          orderHash: nft.mintTxHash ?? null
-        }
-      };
-    }
 
     if (!nft.collectionId) {
       throw new AppError("NFT must belong to a collection before it can be published on-chain.", 400);
@@ -205,6 +200,12 @@ export class NftsService {
     }
 
     let currentNft = nft;
+
+    const isMinted = (currentNft.status === NftStatus.MINTED || currentNft.status === NftStatus.LISTED) && currentNft.tokenId;
+
+    if (isMinted) {
+      return currentNft;
+    }
 
     if (!currentNft.ipfsMetadataCid || !currentNft.metadataUri) {
       currentNft = (await this.uploadToIpfs(userId, nftId)) as typeof currentNft;
@@ -225,7 +226,7 @@ export class NftsService {
       metadataUri: currentNft.metadataUri
     });
 
-    const updatedNft = await this.nftsRepository.update(userId, nftId, {
+    currentNft = (await this.nftsRepository.update(userId, nftId, {
       status: NftStatus.MINTED,
       chain: "polygon",
       contractAddress,
@@ -233,6 +234,36 @@ export class NftsService {
       mintTxHash: mintResult.txHash,
       listingUrl: mintResult.openseaUrl,
       mintedAt: new Date()
+    } as Prisma.NftUncheckedUpdateInput)) as typeof currentNft;
+
+    return currentNft;
+  }
+
+  async listOnMarketplace(userId: string, nftId: string, priceEth: string) {
+    const currentNft = await this.mintNft(userId, nftId);
+
+    if (currentNft.status === NftStatus.LISTED && currentNft.listingOrderHash) {
+      await this.marketplaceService.cancelListing({ orderHash: currentNft.listingOrderHash });
+    }
+
+    const contractAddress = currentNft.contractAddress ?? currentNft.collection?.contractAddress;
+
+    if (!contractAddress || !currentNft.tokenId) {
+      throw new AppError("NFT must be minted before it can be listed.", 400);
+    }
+
+    const listing = await this.marketplaceService.createListing({
+      contractAddress,
+      tokenId: currentNft.tokenId,
+      priceEth
+    });
+
+    const updatedNft = await this.nftsRepository.update(userId, nftId, {
+      status: NftStatus.LISTED,
+      listingPriceEth: priceEth,
+      listingOrderHash: listing.orderHash,
+      listingUrl: listing.listingUrl,
+      listedAt: new Date()
     } as Prisma.NftUncheckedUpdateInput);
 
     if (!updatedNft) {
@@ -242,10 +273,37 @@ export class NftsService {
     return {
       nft: updatedNft,
       listing: {
-        listingUrl: mintResult.openseaUrl,
-        status: "minted",
-        orderHash: mintResult.txHash
+        listingUrl: listing.listingUrl,
+        status: "listed",
+        orderHash: listing.orderHash
       }
     };
+  }
+
+  async unlistFromMarketplace(userId: string, nftId: string) {
+    const nft = (await this.getById(userId, nftId)) as MintableNft & {
+      status: string;
+      listingOrderHash?: string | null;
+      listingUrl?: string | null;
+    };
+
+    if (nft.status !== NftStatus.LISTED || !nft.listingOrderHash) {
+      throw new AppError("NFT is not listed.", 400);
+    }
+
+    await this.marketplaceService.cancelListing({ orderHash: nft.listingOrderHash });
+
+    const updatedNft = await this.nftsRepository.update(userId, nftId, {
+      status: NftStatus.MINTED,
+      listingPriceEth: null,
+      listingOrderHash: null,
+      listedAt: null
+    } as Prisma.NftUncheckedUpdateInput);
+
+    if (!updatedNft) {
+      throw new AppError("NFT not found", 404);
+    }
+
+    return { nft: updatedNft };
   }
 }
