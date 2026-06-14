@@ -221,7 +221,7 @@ export class NftsService {
       throw new AppError("Collection contract address is missing.", 400);
     }
 
-    const mintResult = await this.blockchainService.mintNft({
+    const mintResult = await this.blockchainService.mintNft(userId, {
       contractAddress,
       metadataUri: currentNft.metadataUri
     });
@@ -243,7 +243,7 @@ export class NftsService {
     const currentNft = await this.mintNft(userId, nftId);
 
     if (currentNft.status === NftStatus.LISTED && currentNft.listingOrderHash) {
-      await this.marketplaceService.cancelListing({ orderHash: currentNft.listingOrderHash });
+      await this.marketplaceService.cancelListing(userId, { orderHash: currentNft.listingOrderHash });
     }
 
     const contractAddress = currentNft.contractAddress ?? currentNft.collection?.contractAddress;
@@ -252,7 +252,7 @@ export class NftsService {
       throw new AppError("NFT must be minted before it can be listed.", 400);
     }
 
-    const listing = await this.marketplaceService.createListing({
+    const listing = await this.marketplaceService.createListing(userId, {
       contractAddress,
       tokenId: currentNft.tokenId,
       priceEth
@@ -291,7 +291,7 @@ export class NftsService {
       throw new AppError("NFT is not listed.", 400);
     }
 
-    await this.marketplaceService.cancelListing({ orderHash: nft.listingOrderHash });
+    await this.marketplaceService.cancelListing(userId, { orderHash: nft.listingOrderHash });
 
     const updatedNft = await this.nftsRepository.update(userId, nftId, {
       status: NftStatus.MINTED,

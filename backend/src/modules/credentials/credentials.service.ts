@@ -20,7 +20,7 @@ const providers: CredentialProviderValue[] = [
 const requiredCredentialFields: Record<CredentialProviderValue, string[]> = {
   [CredentialProvider.OPENAI]: ["apiKey"],
   [CredentialProvider.GEMINI]: ["apiKey"],
-  [CredentialProvider.OPENSEA]: ["apiKey"],
+  [CredentialProvider.OPENSEA]: ["rpcUrl", "walletPrivateKey"],
   [CredentialProvider.IPFS]: ["provider", "jwt"],
   [CredentialProvider.TWITTER]: ["apiKey", "apiSecret"],
   [CredentialProvider.DISCORD]: ["webhookUrl"]

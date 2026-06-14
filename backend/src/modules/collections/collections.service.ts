@@ -98,7 +98,7 @@ export class CollectionsService {
       return collection;
     }
 
-    const deployment = await this.blockchainService.deployCollectionContract({
+    const deployment = await this.blockchainService.deployCollectionContract(userId, {
       name: collection.name,
       symbol: collection.contractSymbol || buildContractSymbol(collection.name)
     });

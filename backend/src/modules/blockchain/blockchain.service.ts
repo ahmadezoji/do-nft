@@ -4,7 +4,8 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 import { AppError } from "../../common/errors/app-error.js";
-import { env } from "../../config/env.js";
+import { CredentialProvider } from "../../common/constants/domain-enums.js";
+import { CredentialsService } from "../credentials/credentials.service.js";
 
 const require = createRequire(import.meta.url);
 const solc = require("solc") as {
@@ -104,32 +105,36 @@ const loadArtifact = async () => {
 };
 
 export class BlockchainService {
-  getClients() {
-    if (!env.ALCHEMY_RPC_URL || !env.WALLET_PRIVATE_KEY) {
+  constructor(private readonly credentialsService = new CredentialsService()) {}
+
+  async getClients(userId: string) {
+    const credentials = await this.credentialsService.getProviderValues(userId, CredentialProvider.OPENSEA);
+
+    if (!credentials?.rpcUrl || !credentials.walletPrivateKey) {
       throw new AppError(
-        "Blockchain publishing is not configured. Add ALCHEMY_RPC_URL and WALLET_PRIVATE_KEY to the backend environment.",
+        "Blockchain publishing is not configured. Add an RPC URL and wallet private key in Settings.",
         400
       );
     }
 
-    const account = privateKeyToAccount(normalizePrivateKey(env.WALLET_PRIVATE_KEY));
+    const account = privateKeyToAccount(normalizePrivateKey(credentials.walletPrivateKey));
 
     return {
       account,
       publicClient: createPublicClient({
         chain: polygon,
-        transport: http(env.ALCHEMY_RPC_URL)
+        transport: http(credentials.rpcUrl)
       }),
       walletClient: createWalletClient({
         account,
         chain: polygon,
-        transport: http(env.ALCHEMY_RPC_URL)
+        transport: http(credentials.rpcUrl)
       })
     };
   }
 
-  getPublisherAddress() {
-    return this.getClients().account.address as string;
+  async getPublisherAddress(userId: string) {
+    return (await this.getClients(userId)).account.address as string;
   }
 
   buildMetadataUri(cid: string) {
@@ -140,9 +145,9 @@ export class BlockchainService {
     return buildOpenSeaUrl(contractAddress, tokenId);
   }
 
-  async deployCollectionContract(input: { name: string; symbol: string }) {
+  async deployCollectionContract(userId: string, input: { name: string; symbol: string }) {
     const artifact = await loadArtifact();
-    const { account, publicClient, walletClient } = this.getClients();
+    const { account, publicClient, walletClient } = await this.getClients(userId);
     const hash = await walletClient.deployContract({
       abi: artifact.abi,
       bytecode: artifact.bytecode,
@@ -162,9 +167,9 @@ export class BlockchainService {
     };
   }
 
-  async mintNft(input: { contractAddress: string; metadataUri: string; ownerWallet?: string }) {
+  async mintNft(userId: string, input: { contractAddress: string; metadataUri: string; ownerWallet?: string }) {
     const artifact = await loadArtifact();
-    const { account, publicClient, walletClient } = this.getClients();
+    const { account, publicClient, walletClient } = await this.getClients(userId);
     const recipientAddress = input.ownerWallet || account.address;
     const nextTokenId = await publicClient.readContract({
       address: input.contractAddress,

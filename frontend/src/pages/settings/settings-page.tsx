@@ -43,35 +43,29 @@ const credentialConfigs = {
     ]
   },
   OPENSEA: {
-    title: "OpenSea",
-    description: "Not required for Polygon publishing. OpenSea automatically indexes NFTs after on-chain minting.",
+    title: "Blockchain & OpenSea",
+    description:
+      "RPC URL and wallet private key are required to deploy contracts and mint NFTs on Polygon. The OpenSea API key is optional and only needed to list NFTs on OpenSea.",
     label: "opensea credentials",
     fields: [
       {
-        key: "apiKey",
-        label: "API key",
-        placeholder: "OpenSea API key",
+        key: "rpcUrl",
+        label: "RPC URL",
+        placeholder: "https://polygon-mainnet.infura.io/v3/...",
+        type: "url",
+        required: true
+      },
+      {
+        key: "walletPrivateKey",
+        label: "Wallet private key",
+        placeholder: "0x...",
         type: "password",
         required: true
       },
       {
-        key: "chain",
-        label: "Default chain",
-        placeholder: "ethereum",
-        type: "text",
-        required: false
-      },
-      {
-        key: "rpcUrl",
-        label: "RPC URL",
-        placeholder: "https://mainnet.infura.io/v3/...",
-        type: "url",
-        required: false
-      },
-      {
-        key: "walletPrivateKey",
-        label: "Seller wallet private key",
-        placeholder: "0x...",
+        key: "apiKey",
+        label: "OpenSea API key",
+        placeholder: "OpenSea API key (optional)",
         type: "password",
         required: false
       }

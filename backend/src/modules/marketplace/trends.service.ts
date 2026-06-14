@@ -1,4 +1,5 @@
-import { env } from "../../config/env.js";
+import { CredentialProvider } from "../../common/constants/domain-enums.js";
+import { CredentialsService } from "../credentials/credentials.service.js";
 
 const OPENSEA_API_BASE = "https://api.opensea.io/api/v2";
 const CACHE_TTL_MS = 15 * 60 * 1000;
@@ -17,7 +18,7 @@ type CachedTrends = {
   items: TrendingCollection[];
 };
 
-let cache: CachedTrends | null = null;
+const cache = new Map<string, CachedTrends>();
 
 type OpenSeaCollectionSummary = {
   collection?: string;
@@ -33,30 +34,36 @@ type OpenSeaCollectionStats = {
 };
 
 export class MarketplaceTrendsService {
-  async getTrendingCollections(): Promise<{ items: TrendingCollection[]; error?: string }> {
-    if (!env.OPENSEA_API_KEY) {
+  constructor(private readonly credentialsService = new CredentialsService()) {}
+
+  async getTrendingCollections(userId: string): Promise<{ items: TrendingCollection[]; error?: string }> {
+    const credentials = await this.credentialsService.getProviderValues(userId, CredentialProvider.OPENSEA);
+
+    if (!credentials?.apiKey) {
       return { items: [], error: "OpenSea API key not configured" };
     }
 
-    if (cache && Date.now() - cache.fetchedAt < CACHE_TTL_MS) {
-      return { items: cache.items };
+    const cached = cache.get(userId);
+
+    if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
+      return { items: cached.items };
     }
 
     try {
-      const items = await this.fetchTrendingCollections();
-      cache = { fetchedAt: Date.now(), items };
+      const items = await this.fetchTrendingCollections(credentials.apiKey);
+      cache.set(userId, { fetchedAt: Date.now(), items });
       return { items };
     } catch (error) {
-      if (cache) {
-        return { items: cache.items };
+      if (cached) {
+        return { items: cached.items };
       }
 
       return { items: [], error: error instanceof Error ? error.message : "Failed to load trending collections" };
     }
   }
 
-  private async fetchTrendingCollections(): Promise<TrendingCollection[]> {
-    const headers = { "x-api-key": env.OPENSEA_API_KEY as string, accept: "application/json" };
+  private async fetchTrendingCollections(apiKey: string): Promise<TrendingCollection[]> {
+    const headers = { "x-api-key": apiKey, accept: "application/json" };
 
     const listResponse = await fetch(`${OPENSEA_API_BASE}/collections?chain=matic&order_by=seven_day_volume&limit=10`, {
       headers

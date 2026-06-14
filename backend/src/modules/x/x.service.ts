@@ -41,9 +41,18 @@ export class XService {
   async createAuthLink(userId: string, callbackUrl: string, frontendOrigin: string) {
     const { apiKey, apiSecret } = await this.getConsumerCredentials(userId);
     const client = new TwitterApi({ appKey: apiKey, appSecret: apiSecret });
-    const { url, oauth_token, oauth_token_secret } = await client.generateAuthLink(callbackUrl, {
-      linkMode: "authorize"
-    });
+
+    let authLink: { url: string; oauth_token: string; oauth_token_secret: string };
+
+    try {
+      authLink = await client.generateAuthLink(callbackUrl, { linkMode: "authorize" });
+    } catch (caughtError) {
+      const details = (caughtError as { data?: unknown; message?: string })?.data ??
+        (caughtError as Error)?.message;
+      throw new AppError("X rejected the authorization request.", 400, details);
+    }
+
+    const { url, oauth_token, oauth_token_secret } = authLink;
 
     this.cleanupPendingOAuth();
     this.pendingOAuth.set(oauth_token, {

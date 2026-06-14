@@ -1,6 +1,5 @@
 import { CredentialProvider } from "../../common/constants/domain-enums.js";
 import { AppError } from "../../common/errors/app-error.js";
-import { env } from "../../config/env.js";
 import { CredentialsService } from "../credentials/credentials.service.js";
 
 export interface IpfsProvider {
@@ -156,7 +155,7 @@ class PinataIpfsProvider implements IpfsProvider {
   async isConfigured(userId: string) {
     const credentials = await this.credentialsService.getProviderValues(userId, CredentialProvider.IPFS);
 
-    return Boolean(credentials?.jwt || env.PINATA_JWT);
+    return Boolean(credentials?.jwt);
   }
 
   private async getCredentials(userId: string) {
@@ -165,14 +164,14 @@ class PinataIpfsProvider implements IpfsProvider {
       CredentialProvider.IPFS
     )) as PinataCredentials | null;
 
-    if (!credentials?.jwt && !env.PINATA_JWT) {
+    if (!credentials?.jwt) {
       throw new AppError("IPFS is not configured. Add your Pinata JWT in Settings before uploading.", 400);
     }
 
     return {
-      provider: credentials?.provider ?? "Pinata",
-      jwt: credentials?.jwt ?? env.PINATA_JWT,
-      gatewayUrl: credentials?.gatewayUrl ?? env.PINATA_GATEWAY_URL
+      provider: credentials.provider ?? "Pinata",
+      jwt: credentials.jwt,
+      gatewayUrl: credentials.gatewayUrl
     };
   }
 
