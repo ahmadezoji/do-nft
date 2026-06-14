@@ -8,7 +8,8 @@ export class XController {
 
   startOAuth = async (request: Request, response: Response) => {
     const callbackUrl = `${request.protocol}://${request.get("host")}/api/x/oauth/callback`;
-    const frontendOrigin = (request.headers.origin as string | undefined) ?? env.FRONTEND_URL ?? callbackUrl;
+    const siteOrigin = `${request.protocol}://${request.get("host")}`;
+    const frontendOrigin = (request.headers.origin as string | undefined) ?? env.FRONTEND_URL ?? siteOrigin;
 
     const { url } = await this.xService.createAuthLink(request.auth!.userId, callbackUrl, frontendOrigin);
 
