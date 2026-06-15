@@ -206,11 +206,15 @@ export const PromotionsPage = () => {
                       <span className="eyebrow">{post.platform}</span>
                       <p>{post.content}</p>
                       <p className="muted">{post.hashtags.join(" ")}</p>
-                      {post.platform === "TWITTER" ? (
-                        post.status === "POSTED" && post.externalUrl ? (
-                          <a href={post.externalUrl} target="_blank" rel="noreferrer">
-                            {t("viewOnX")}
-                          </a>
+                      {post.platform === "TWITTER" || post.platform === "DISCORD" ? (
+                        post.status === "POSTED" ? (
+                          post.externalUrl ? (
+                            <a href={post.externalUrl} target="_blank" rel="noreferrer">
+                              {t("viewOnX")}
+                            </a>
+                          ) : (
+                            <span className="muted">{t("postPublished")}</span>
+                          )
                         ) : (
                           <button
                             type="button"
@@ -219,7 +223,7 @@ export const PromotionsPage = () => {
                           >
                             <span className="button-label">
                               {publishingPostId === post.id ? <LoadingSpinner size="sm" /> : null}
-                              {t("postToX")}
+                              {post.platform === "DISCORD" ? t("postToDiscord") : t("postToX")}
                             </span>
                           </button>
                         )

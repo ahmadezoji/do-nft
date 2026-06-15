@@ -2,6 +2,7 @@ import { AppError } from "../../common/errors/app-error.js";
 import { Platform, PromotionCampaignStatus } from "../../common/constants/domain-enums.js";
 import { prisma } from "../../database/prisma.js";
 import { AiService } from "../ai/ai.service.js";
+import { DiscordService } from "../discord/discord.service.js";
 import { XService } from "../x/x.service.js";
 
 import { PromotionsRepository } from "./promotions.repository.js";
@@ -10,7 +11,8 @@ export class PromotionsService {
   constructor(
     private readonly promotionsRepository = new PromotionsRepository(),
     private readonly aiService = new AiService(),
-    private readonly xService = new XService()
+    private readonly xService = new XService(),
+    private readonly discordService = new DiscordService()
   ) {}
 
   list(userId: string) {
@@ -93,13 +95,22 @@ export class PromotionsService {
       throw new AppError("Promotion post not found", 404);
     }
 
-    if (post.platform !== Platform.TWITTER) {
-      throw new AppError("Only X (Twitter) posts can be published from here.", 400);
+    if (post.platform !== Platform.TWITTER && post.platform !== Platform.DISCORD) {
+      throw new AppError("Only X (Twitter) and Discord posts can be published from here.", 400);
     }
 
-    const text = `${post.content}\n\n${post.hashtags.join(" ")}`.trim().slice(0, 280);
-
     try {
+      if (post.platform === Platform.DISCORD) {
+        const text = `${post.content}\n\n${post.hashtags.join(" ")}`.trim();
+
+        await this.discordService.postMessage(userId, text);
+
+        return this.promotionsRepository.updatePostResult(postId, {
+          status: PromotionCampaignStatus.POSTED
+        });
+      }
+
+      const text = `${post.content}\n\n${post.hashtags.join(" ")}`.trim().slice(0, 280);
       const tweet = await this.xService.postTweet(userId, text);
 
       return this.promotionsRepository.updatePostResult(postId, {
