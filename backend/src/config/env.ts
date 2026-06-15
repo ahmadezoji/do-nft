@@ -11,7 +11,8 @@ const envSchema = z.object({
   ENCRYPTION_SECRET: z.string().min(16),
   OPENAI_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
-  FRONTEND_URL: z.string().optional()
+  FRONTEND_URL: z.string().optional(),
+  OPENAI_IMAGE_QUALITY: z.enum(["low", "medium", "high"]).default("medium")
 });
 
 export const env = envSchema.parse(process.env);

@@ -1,4 +1,5 @@
 import { AppError } from "../../../common/errors/app-error.js";
+import { env } from "../../../config/env.js";
 
 import type { ImageGenerationInput, ImageGenerationProvider, ImageGenerationResult } from "../ai.types.js";
 
@@ -116,7 +117,7 @@ export class OpenAiImageProvider implements ImageGenerationProvider {
         model,
         prompt,
         size,
-        quality: "high"
+        quality: env.OPENAI_IMAGE_QUALITY
       })
     });
 
