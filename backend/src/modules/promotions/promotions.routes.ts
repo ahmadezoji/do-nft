@@ -14,5 +14,7 @@ router.use(requireAuth);
 router.get("/", asyncHandler(controller.list));
 router.post("/", validateRequest(createPromotionSchema), asyncHandler(controller.create));
 router.post("/:campaignId/posts/:postId/publish", asyncHandler(controller.publishPost));
+router.post("/:campaignId/regenerate", asyncHandler(controller.regenerate));
+router.delete("/:campaignId", asyncHandler(controller.delete));
 
 export const promotionsRouter = router;

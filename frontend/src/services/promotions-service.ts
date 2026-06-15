@@ -14,5 +14,12 @@ export const promotionsService = {
   publishPost: async (campaignId: string, postId: string) => {
     const { data } = await http.post<PromotionPost>(`/promotions/${campaignId}/posts/${postId}/publish`);
     return data;
+  },
+  regenerate: async (campaignId: string) => {
+    const { data } = await http.post<PromotionCampaign>(`/promotions/${campaignId}/regenerate`);
+    return data;
+  },
+  remove: async (campaignId: string) => {
+    await http.delete(`/promotions/${campaignId}`);
   }
 };

@@ -50,6 +50,41 @@ export class PromotionsService {
     });
   }
 
+  async delete(userId: string, campaignId: string) {
+    const deleted = await this.promotionsRepository.delete(userId, campaignId);
+
+    if (!deleted) {
+      throw new AppError("Promotion campaign not found", 404);
+    }
+  }
+
+  async regenerate(userId: string, campaignId: string) {
+    const campaign = await this.promotionsRepository.findCampaign(userId, campaignId);
+
+    if (!campaign) {
+      throw new AppError("Promotion campaign not found", 404);
+    }
+
+    const nft = campaign.nft;
+
+    const generatedPosts = await this.aiService.generatePromotion(userId, {
+      assetName: nft?.name ?? campaign.name,
+      assetDescription: nft?.description ?? undefined,
+      assetUrl: nft?.listingUrl ?? nft?.imageUrl ?? undefined,
+      platforms: campaign.platforms
+    });
+
+    return this.promotionsRepository.replacePosts(
+      campaignId,
+      campaign.platforms.map((platform) => ({
+        platform,
+        content: generatedPosts[platform]?.content ?? "",
+        hashtags: generatedPosts[platform]?.hashtags ?? [],
+        status: PromotionCampaignStatus.GENERATED
+      }))
+    );
+  }
+
   async publishPost(userId: string, campaignId: string, postId: string) {
     const campaign = await this.promotionsRepository.findCampaignWithPost(userId, campaignId, postId);
     const post = campaign?.posts[0];

@@ -16,6 +16,8 @@ export const PromotionsPage = () => {
   const [nfts, setNfts] = useState<Nft[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [publishingPostId, setPublishingPostId] = useState("");
+  const [regeneratingCampaignId, setRegeneratingCampaignId] = useState("");
+  const [deletingCampaignId, setDeletingCampaignId] = useState("");
   const { success, error } = useAlerts();
   const { t } = useLanguage();
   const [form, setForm] = useState({
@@ -50,6 +52,38 @@ export const PromotionsPage = () => {
       error(getErrorMessage(caughtError, t("somethingWentWrong")));
     } finally {
       setPublishingPostId("");
+    }
+  };
+
+  const regenerateCampaign = async (campaignId: string) => {
+    setRegeneratingCampaignId(campaignId);
+
+    try {
+      await promotionsService.regenerate(campaignId);
+      await load();
+      success(t("campaignRegenerated"));
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setRegeneratingCampaignId("");
+    }
+  };
+
+  const removeCampaign = async (campaignId: string) => {
+    if (!window.confirm(t("confirmDeleteCampaign"))) {
+      return;
+    }
+
+    setDeletingCampaignId(campaignId);
+
+    try {
+      await promotionsService.remove(campaignId);
+      await load();
+      success(t("campaignDeleted"));
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setDeletingCampaignId("");
     }
   };
 
@@ -143,6 +177,29 @@ export const PromotionsPage = () => {
                   <div className="list-row">
                     <strong>{campaign.name}</strong>
                     <span>{campaign.status}</span>
+                  </div>
+                  <div className="button-row">
+                    <button
+                      type="button"
+                      onClick={() => regenerateCampaign(campaign.id)}
+                      disabled={regeneratingCampaignId === campaign.id}
+                    >
+                      <span className="button-label">
+                        {regeneratingCampaignId === campaign.id ? <LoadingSpinner size="sm" /> : null}
+                        {t("regenerateCampaign")}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="danger-button"
+                      onClick={() => removeCampaign(campaign.id)}
+                      disabled={deletingCampaignId === campaign.id}
+                    >
+                      <span className="button-label">
+                        {deletingCampaignId === campaign.id ? <LoadingSpinner size="sm" /> : null}
+                        {t("deleteCampaign")}
+                      </span>
+                    </button>
                   </div>
                   {campaign.posts.map((post) => (
                     <div key={post.id} className="post-preview">

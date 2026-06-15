@@ -126,6 +126,11 @@ export const translations = {
     postToX: "Post to X",
     viewOnX: "View on X",
     postPublished: "Posted to X.",
+    regenerateCampaign: "Regenerate",
+    deleteCampaign: "Delete",
+    confirmDeleteCampaign: "Delete this campaign? This cannot be undone.",
+    campaignDeleted: "Campaign deleted.",
+    campaignRegenerated: "Campaign content regenerated.",
     autoPromoterTitle: "Auto-Promoter",
     autoPromoterDescription:
       "When enabled, this background job periodically searches X for accounts relevant to your collection and suggests retweets. Review and approve suggestions below.",
@@ -304,6 +309,11 @@ export const translations = {
     postToX: "ارسال در X",
     viewOnX: "مشاهده در X",
     postPublished: "در X منتشر شد.",
+    regenerateCampaign: "بازسازی محتوا",
+    deleteCampaign: "حذف",
+    confirmDeleteCampaign: "این کمپین حذف شود؟ این عمل قابل بازگشت نیست.",
+    campaignDeleted: "کمپین حذف شد.",
+    campaignRegenerated: "محتوای کمپین بازسازی شد.",
     autoPromoterTitle: "پروموتر خودکار",
     autoPromoterDescription:
       "وقتی فعال باشد، این فرآیند پشت‌زمینه به‌طور دوره‌ای در X به‌دنبال حساب‌های مرتبط با کالکشن شما می‌گردد و ریتوییت‌های پیشنهادی ارائه می‌دهد. پیشنهادها را در پایین بررسی و تأیید کن.",
