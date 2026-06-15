@@ -34,6 +34,7 @@ export class PromotionsService {
     const generatedPosts = await this.aiService.generatePromotion(userId, {
       assetName: nft?.name ?? input.name,
       assetDescription: nft?.description ?? undefined,
+      assetUrl: nft?.listingUrl ?? nft?.imageUrl ?? undefined,
       platforms: input.platforms
     });
 

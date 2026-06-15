@@ -60,11 +60,13 @@ export class MockAiProvider implements TextGenerationProvider, ImageGenerationPr
   }
 
   async generatePromotion(context: PromotionGenerationContext) {
+    const link = context.assetUrl ? `\n\n${context.assetUrl}` : "";
+
     return Object.fromEntries(
       context.platforms.map((platform) => [
         platform,
         {
-          content: `Discover ${context.assetName}. ${context.assetDescription ?? ""} Crafted for collectors who value ${context.toneOfVoice ?? "distinctive digital art"}.`,
+          content: `Discover ${context.assetName}. ${context.assetDescription ?? ""} Crafted for collectors who value ${context.toneOfVoice ?? "distinctive digital art"}.${link}`,
           hashtags: [...(context.defaultHashtags ?? []), "#NFT", "#DigitalArt", `#${platform}`]
         }
       ])

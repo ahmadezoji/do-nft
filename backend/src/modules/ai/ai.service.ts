@@ -99,13 +99,14 @@ export class AiService {
 
   async generatePromotion(
     userId: string,
-    input: { assetName: string; assetDescription?: string; platforms: string[] }
+    input: { assetName: string; assetDescription?: string; assetUrl?: string; platforms: string[] }
   ) {
     const branding = await prisma.personalBranding.findUnique({ where: { userId } });
 
     return this.textProvider.generatePromotion({
       assetName: input.assetName,
       assetDescription: input.assetDescription,
+      assetUrl: input.assetUrl,
       platforms: input.platforms,
       toneOfVoice: branding?.toneOfVoice,
       socialMediaStyle: branding?.socialMediaStyle,

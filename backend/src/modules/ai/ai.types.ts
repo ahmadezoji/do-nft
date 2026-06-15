@@ -33,6 +33,7 @@ export type PromptGenerationContext = {
 export type PromotionGenerationContext = {
   assetName: string;
   assetDescription?: string | null;
+  assetUrl?: string | null;
   platforms: string[];
   toneOfVoice?: string | null;
   socialMediaStyle?: string | null;
