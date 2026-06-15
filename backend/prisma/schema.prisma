@@ -15,6 +15,7 @@ enum CredentialProvider {
   IPFS
   TWITTER
   DISCORD
+  FARCASTER
 }
 
 enum CollectionStatus {

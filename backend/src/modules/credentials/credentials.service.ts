@@ -10,6 +10,7 @@ type CredentialValueMap = Record<string, string>;
 
 const providers: CredentialProviderValue[] = [
   CredentialProvider.DISCORD,
+  CredentialProvider.FARCASTER,
   CredentialProvider.GEMINI,
   CredentialProvider.IPFS,
   CredentialProvider.OPENAI,
@@ -23,7 +24,8 @@ const requiredCredentialFields: Record<CredentialProviderValue, string[]> = {
   [CredentialProvider.OPENSEA]: ["rpcUrl", "walletPrivateKey"],
   [CredentialProvider.IPFS]: ["provider", "jwt"],
   [CredentialProvider.TWITTER]: ["apiKey", "apiSecret"],
-  [CredentialProvider.DISCORD]: ["webhookUrl"]
+  [CredentialProvider.DISCORD]: ["webhookUrl"],
+  [CredentialProvider.FARCASTER]: ["apiKey", "signerUuid"]
 };
 
 export class CredentialsService {

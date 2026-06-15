@@ -3,6 +3,7 @@ import { Platform, PromotionCampaignStatus } from "../../common/constants/domain
 import { prisma } from "../../database/prisma.js";
 import { AiService } from "../ai/ai.service.js";
 import { DiscordService } from "../discord/discord.service.js";
+import { FarcasterService } from "../farcaster/farcaster.service.js";
 import { XService } from "../x/x.service.js";
 
 import { PromotionsRepository } from "./promotions.repository.js";
@@ -12,7 +13,8 @@ export class PromotionsService {
     private readonly promotionsRepository = new PromotionsRepository(),
     private readonly aiService = new AiService(),
     private readonly xService = new XService(),
-    private readonly discordService = new DiscordService()
+    private readonly discordService = new DiscordService(),
+    private readonly farcasterService = new FarcasterService()
   ) {}
 
   list(userId: string) {
@@ -95,8 +97,8 @@ export class PromotionsService {
       throw new AppError("Promotion post not found", 404);
     }
 
-    if (post.platform !== Platform.TWITTER && post.platform !== Platform.DISCORD) {
-      throw new AppError("Only X (Twitter) and Discord posts can be published from here.", 400);
+    if (post.platform !== Platform.TWITTER && post.platform !== Platform.DISCORD && post.platform !== Platform.FARCASTER) {
+      throw new AppError("Only X (Twitter), Discord, and Farcaster posts can be published from here.", 400);
     }
 
     try {
@@ -107,6 +109,17 @@ export class PromotionsService {
 
         return this.promotionsRepository.updatePostResult(postId, {
           status: PromotionCampaignStatus.POSTED
+        });
+      }
+
+      if (post.platform === Platform.FARCASTER) {
+        const text = `${post.content}\n\n${post.hashtags.join(" ")}`.trim().slice(0, 320);
+        const cast = await this.farcasterService.postCast(userId, text);
+
+        return this.promotionsRepository.updatePostResult(postId, {
+          status: PromotionCampaignStatus.POSTED,
+          externalPostId: cast.hash,
+          externalUrl: cast.url
         });
       }
 

@@ -4,7 +4,8 @@ export const CredentialProvider = {
   OPENSEA: "OPENSEA",
   IPFS: "IPFS",
   TWITTER: "TWITTER",
-  DISCORD: "DISCORD"
+  DISCORD: "DISCORD",
+  FARCASTER: "FARCASTER"
 } as const;
 
 export const CollectionStatus = {

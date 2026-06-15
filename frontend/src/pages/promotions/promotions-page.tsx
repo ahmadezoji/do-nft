@@ -206,7 +206,7 @@ export const PromotionsPage = () => {
                       <span className="eyebrow">{post.platform}</span>
                       <p>{post.content}</p>
                       <p className="muted">{post.hashtags.join(" ")}</p>
-                      {post.platform === "TWITTER" || post.platform === "DISCORD" ? (
+                      {post.platform === "TWITTER" || post.platform === "DISCORD" || post.platform === "FARCASTER" ? (
                         post.status === "POSTED" ? (
                           post.externalUrl ? (
                             <a href={post.externalUrl} target="_blank" rel="noreferrer">
@@ -223,7 +223,11 @@ export const PromotionsPage = () => {
                           >
                             <span className="button-label">
                               {publishingPostId === post.id ? <LoadingSpinner size="sm" /> : null}
-                              {post.platform === "DISCORD" ? t("postToDiscord") : t("postToX")}
+                              {post.platform === "DISCORD"
+                                ? t("postToDiscord")
+                                : post.platform === "FARCASTER"
+                                  ? t("postToFarcaster")
+                                  : t("postToX")}
                             </span>
                           </button>
                         )

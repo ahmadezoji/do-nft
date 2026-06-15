@@ -155,6 +155,28 @@ const credentialConfigs = {
         required: true
       }
     ]
+  },
+  FARCASTER: {
+    title: "Farcaster",
+    description:
+      "Posts are published via Neynar. Create a free account at neynar.com, copy your API key, then create a managed signer (approve it in Warpcast) and paste its Signer UUID here.",
+    label: "farcaster credentials",
+    fields: [
+      {
+        key: "apiKey",
+        label: "Neynar API key",
+        placeholder: "NEYNAR_API_KEY",
+        type: "password",
+        required: true
+      },
+      {
+        key: "signerUuid",
+        label: "Signer UUID",
+        placeholder: "Approved signer UUID from Neynar",
+        type: "password",
+        required: true
+      }
+    ]
   }
 } as const;
 
