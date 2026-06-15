@@ -3,6 +3,7 @@ import { Platform, PromotionCampaignStatus } from "../../common/constants/domain
 import { prisma } from "../../database/prisma.js";
 import { AiService } from "../ai/ai.service.js";
 import { DiscordService } from "../discord/discord.service.js";
+import type { DiscordEmbed } from "../discord/discord.service.js";
 import { FarcasterService } from "../farcaster/farcaster.service.js";
 import { XService } from "../x/x.service.js";
 
@@ -103,9 +104,24 @@ export class PromotionsService {
 
     try {
       if (post.platform === Platform.DISCORD) {
-        const text = `${post.content}\n\n${post.hashtags.join(" ")}`.trim();
+        const nft = campaign.nft;
+        const linkUrl = nft?.listingUrl ?? nft?.imageUrl ?? undefined;
+        const hashtags = post.hashtags.join(" ");
+        const text = linkUrl ? `${post.content}\n\n${linkUrl}\n\n${hashtags}`.trim() : `${post.content}\n\n${hashtags}`.trim();
 
-        await this.discordService.postMessage(userId, text);
+        const embed: DiscordEmbed = {
+          title: nft?.name ?? campaign.name,
+          description: post.content,
+          url: nft?.listingUrl ?? undefined,
+          color: 0x9b59b6,
+          footer: hashtags ? { text: hashtags } : undefined
+        };
+
+        if (nft?.imageUrl?.startsWith("http")) {
+          embed.image = { url: nft.imageUrl };
+        }
+
+        await this.discordService.postMessage(userId, text, [embed]);
 
         return this.promotionsRepository.updatePostResult(postId, {
           status: PromotionCampaignStatus.POSTED

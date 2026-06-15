@@ -2,10 +2,19 @@ import { AppError } from "../../common/errors/app-error.js";
 import { CredentialProvider } from "../../common/constants/domain-enums.js";
 import { CredentialsService } from "../credentials/credentials.service.js";
 
+export interface DiscordEmbed {
+  title?: string;
+  description?: string;
+  url?: string;
+  color?: number;
+  image?: { url: string };
+  footer?: { text: string };
+}
+
 export class DiscordService {
   constructor(private readonly credentialsService = new CredentialsService()) {}
 
-  async postMessage(userId: string, content: string) {
+  async postMessage(userId: string, content: string, embeds?: DiscordEmbed[]) {
     const values = await this.credentialsService.getProviderValues(userId, CredentialProvider.DISCORD);
 
     if (!values?.webhookUrl) {
@@ -15,7 +24,7 @@ export class DiscordService {
     const response = await fetch(values.webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content })
+      body: JSON.stringify({ content, embeds })
     });
 
     if (!response.ok) {

@@ -69,6 +69,7 @@ export class PromotionsRepository {
     return prisma.promotionCampaign.findFirst({
       where: { id: campaignId, userId },
       include: {
+        nft: true,
         posts: {
           where: { id: postId }
         }
