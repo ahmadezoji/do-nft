@@ -115,23 +115,51 @@ export class XService {
     });
   }
 
+  private toAppError(caughtError: unknown) {
+    const status = (caughtError as { code?: number })?.code;
+    const detail = (caughtError as { data?: { detail?: string; title?: string } })?.data;
+
+    if (status === 402 || detail?.title === "CreditsDepleted") {
+      return new AppError(
+        "X rejected this request: the connected developer account has no API credits left. Add credits or upgrade the plan on the X Developer Portal.",
+        402
+      );
+    }
+
+    if (status === 403 || status === 401) {
+      return new AppError("X rejected this request. Check your X API credentials and access level.", 403);
+    }
+
+    return null;
+  }
+
   async postTweet(userId: string, text: string) {
     const client = await this.getClient(userId);
-    const result = await client.v2.tweet(text);
 
-    return {
-      id: result.data.id,
-      url: `https://x.com/i/web/status/${result.data.id}`
-    };
+    try {
+      const result = await client.v2.tweet(text);
+
+      return {
+        id: result.data.id,
+        url: `https://x.com/i/web/status/${result.data.id}`
+      };
+    } catch (caughtError) {
+      throw this.toAppError(caughtError) ?? caughtError;
+    }
   }
 
   async retweet(userId: string, tweetId: string) {
     const client = await this.getClient(userId);
-    const me = await client.v2.me();
 
-    await client.v2.retweet(me.data.id, tweetId);
+    try {
+      const me = await client.v2.me();
 
-    return { tweetId };
+      await client.v2.retweet(me.data.id, tweetId);
+
+      return { tweetId };
+    } catch (caughtError) {
+      throw this.toAppError(caughtError) ?? caughtError;
+    }
   }
 
   async searchRecent(userId: string, query: string, maxResults = 10) {
@@ -142,13 +170,7 @@ export class XService {
 
       return result.data?.data ?? [];
     } catch (caughtError) {
-      const status = (caughtError as { code?: number })?.code;
-
-      if (status === 403 || status === 401) {
-        throw new AppError("X API search requires a paid Basic/Pro plan.", 403);
-      }
-
-      throw caughtError;
+      throw this.toAppError(caughtError) ?? caughtError;
     }
   }
 }
