@@ -67,6 +67,16 @@ export class NftsService {
     return nft;
   }
 
+  async delete(userId: string, nftId: string) {
+    const nft = await this.getById(userId, nftId);
+
+    if (nft.status === NftStatus.MINTED || nft.status === NftStatus.LISTED) {
+      throw new AppError("Minted or listed NFTs cannot be deleted.", 400);
+    }
+
+    await this.nftsRepository.delete(userId, nftId);
+  }
+
   async getTemplates() {
     const templates = await this.nftsRepository.getTemplates();
 
@@ -128,6 +138,21 @@ export class NftsService {
       storedOnIpfs: Boolean(storedImage),
       provider: input.provider ?? "openai",
       model: image.model ?? input.model ?? null,
+      status: NftStatus.IMAGE_GENERATED
+    };
+  }
+
+  async uploadImage(userId: string, input: { imageDataUrl: string; fileName?: string }) {
+    const isIpfsConfigured = await this.ipfsService.isConfigured(userId);
+    const fileName = sanitizeStorageName(input.fileName ?? `upload-${Date.now()}`);
+    const storedImage = isIpfsConfigured
+      ? await this.ipfsService.uploadImage(userId, input.imageDataUrl, `${fileName}.png`)
+      : null;
+
+    return {
+      imageUrl: storedImage?.gatewayUrl ?? input.imageDataUrl,
+      ipfsImageCid: storedImage?.cid ?? null,
+      storedOnIpfs: Boolean(storedImage),
       status: NftStatus.IMAGE_GENERATED
     };
   }

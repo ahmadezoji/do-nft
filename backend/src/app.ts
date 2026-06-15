@@ -26,7 +26,7 @@ app.use(
     origin: env.FRONTEND_URL ?? true
   })
 );
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "20mb" }));
 app.use(morgan("dev"));
 
 app.get("/api/health", (_request, response) => {

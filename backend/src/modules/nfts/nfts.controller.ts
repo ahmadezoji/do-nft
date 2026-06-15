@@ -21,6 +21,11 @@ export class NftsController {
     response.json(await this.nftsService.update(request.auth!.userId, String(request.params.id), request.body));
   };
 
+  delete = async (request: Request, response: Response) => {
+    await this.nftsService.delete(request.auth!.userId, String(request.params.id));
+    response.status(204).send();
+  };
+
   templates = async (_request: Request, response: Response) => {
     response.json(await this.nftsService.getTemplates());
   };
@@ -31,6 +36,10 @@ export class NftsController {
 
   generateImage = async (request: Request, response: Response) => {
     response.json(await this.nftsService.generateImage(request.auth!.userId, request.body));
+  };
+
+  uploadImage = async (request: Request, response: Response) => {
+    response.json(await this.nftsService.uploadImage(request.auth!.userId, request.body));
   };
 
   uploadToIpfs = async (request: Request, response: Response) => {

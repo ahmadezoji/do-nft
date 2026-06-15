@@ -64,6 +64,23 @@ export class NftsRepository {
     });
   }
 
+  async delete(userId: string, nftId: string) {
+    const nft = await prisma.nft.findFirst({
+      where: {
+        id: nftId,
+        userId
+      }
+    });
+
+    if (!nft) {
+      return null;
+    }
+
+    await prisma.nft.delete({ where: { id: nftId } });
+
+    return nft;
+  }
+
   async getTemplates() {
     return prisma.promptTemplate.findMany({
       orderBy: {

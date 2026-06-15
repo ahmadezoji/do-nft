@@ -36,10 +36,12 @@ export const NftStudioPage = () => {
   const [isListening, setIsListening] = useState(false);
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const imageFileInputRef = useRef<HTMLInputElement | null>(null);
   const { success, error, warning } = useAlerts();
   const [form, setForm] = useState({
     collectionId: "",
@@ -311,6 +313,72 @@ export const NftStudioPage = () => {
     }
   };
 
+  const handleImageFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      warning(t("invalidImageFile"));
+      return;
+    }
+
+    setIsUploadingImage(true);
+
+    try {
+      const imageDataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(reader.error ?? new Error("Failed to read file"));
+        reader.readAsDataURL(file);
+      });
+
+      const result = await nftsService.uploadImage({ imageDataUrl, fileName: file.name });
+
+      setIsPreviewLoading(true);
+      setGeneratedImageUrl(result.imageUrl);
+      try {
+        await persistStudioDraft({
+          imageUrl: result.imageUrl,
+          ipfsImageCid: result.ipfsImageCid ?? undefined,
+          status: "IMAGE_GENERATED"
+        });
+      } catch (persistError) {
+        warning(getErrorMessage(persistError, t("somethingWentWrong")));
+      }
+      if (!result.storedOnIpfs) {
+        warning(t("imageStoredLocallyOnly"));
+      }
+      success(t("imageUploaded"));
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const deleteNft = async (nft: Nft) => {
+    if (!window.confirm(t("confirmDeleteNft"))) {
+      return;
+    }
+
+    try {
+      await nftsService.delete(nft.id);
+      setHistoryNfts((current) => current.filter((item) => item.id !== nft.id));
+
+      if (savedNftId === nft.id) {
+        setSavedNftId("");
+      }
+
+      success(t("nftDeleted"));
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    }
+  };
+
   const saveDraft = async () => {
     setIsSavingDraft(true);
 
@@ -498,11 +566,29 @@ export const NftStudioPage = () => {
               type="button"
               className="secondary-button"
               onClick={() => void generateImage()}
-              disabled={isGeneratingPrompt || isGeneratingImage || isSavingDraft}
+              disabled={isGeneratingPrompt || isGeneratingImage || isUploadingImage || isSavingDraft}
             >
               <span className="button-label">
                 {isGeneratingImage ? <LoadingSpinner size="sm" /> : null}
                 {isGeneratingImage ? t("generatingImage") : t("generateImage")}
+              </span>
+            </button>
+            <input
+              ref={imageFileInputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(event) => void handleImageFileSelected(event)}
+            />
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => imageFileInputRef.current?.click()}
+              disabled={isGeneratingPrompt || isGeneratingImage || isUploadingImage || isSavingDraft}
+            >
+              <span className="button-label">
+                {isUploadingImage ? <LoadingSpinner size="sm" /> : null}
+                {isUploadingImage ? t("uploadingImage") : t("uploadImage")}
               </span>
             </button>
           </div>
@@ -588,6 +674,11 @@ export const NftStudioPage = () => {
                   <Link to={`/nfts/${nft.id}`} className="secondary-button button-link">
                     {t("openDetails")}
                   </Link>
+                  {nft.status !== "MINTED" && nft.status !== "LISTED" ? (
+                    <button type="button" className="danger-button" onClick={() => void deleteNft(nft)}>
+                      {t("deleteNft")}
+                    </button>
+                  ) : null}
                 </div>
               </div>
             ))

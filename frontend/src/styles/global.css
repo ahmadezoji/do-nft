@@ -85,6 +85,16 @@ button:disabled {
   border: 1px solid rgba(246, 241, 233, 0.18);
 }
 
+.danger-button {
+  background: rgba(220, 38, 38, 0.12);
+  color: #fca5a5;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+}
+
+.danger-button:hover {
+  background: rgba(220, 38, 38, 0.2);
+}
+
 input,
 textarea,
 select {

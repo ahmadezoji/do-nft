@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { Card } from "../../components/common/card";
 import { LoadingSpinner } from "../../components/common/loading-spinner";
@@ -11,12 +11,14 @@ import type { Nft } from "../../types/api";
 
 export const NftDetailPage = () => {
   const { id = "" } = useParams();
+  const navigate = useNavigate();
   const [nft, setNft] = useState<Nft | null>(null);
   const [listingUrl, setListingUrl] = useState("");
   const [priceEth, setPriceEth] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isListing, setIsListing] = useState(false);
   const [isUnlisting, setIsUnlisting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const { success, error } = useAlerts();
   const { t } = useLanguage();
@@ -96,6 +98,24 @@ export const NftDetailPage = () => {
     }
   };
 
+  const remove = async () => {
+    if (!window.confirm(t("confirmDeleteNft"))) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await nftsService.delete(id);
+      success(t("nftDeleted"));
+      navigate("/nft-studio");
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (!nft) {
     return <div className="centered-page">Loading NFT...</div>;
   }
@@ -170,6 +190,19 @@ export const NftDetailPage = () => {
                   <span className="button-label">
                     {isListing ? <LoadingSpinner size="sm" /> : null}
                     Mint on Polygon
+                  </span>
+                </button>
+              )}
+              {nft.status === "MINTED" || nft.status === "LISTED" ? null : (
+                <button
+                  type="button"
+                  className="danger-button"
+                  onClick={() => void remove()}
+                  disabled={isDeleting || isUploading || isListing}
+                >
+                  <span className="button-label">
+                    {isDeleting ? <LoadingSpinner size="sm" /> : null}
+                    {t("deleteNft")}
                   </span>
                 </button>
               )}

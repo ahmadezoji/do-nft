@@ -33,6 +33,15 @@ export const nftsService = {
     }>("/nfts/studio/image", payload);
     return data;
   },
+  uploadImage: async (payload: { imageDataUrl: string; fileName?: string }) => {
+    const { data } = await http.post<{
+      imageUrl: string;
+      ipfsImageCid?: string | null;
+      storedOnIpfs?: boolean;
+      status: string;
+    }>("/nfts/studio/upload-image", payload);
+    return data;
+  },
   create: async (payload: Record<string, unknown>) => {
     const { data } = await http.post<Nft>("/nfts", payload);
     return data;
@@ -44,6 +53,9 @@ export const nftsService = {
   uploadToIpfs: async (id: string) => {
     const { data } = await http.post<Nft>(`/nfts/${id}/ipfs`);
     return data;
+  },
+  delete: async (id: string) => {
+    await http.delete(`/nfts/${id}`);
   },
   mintNft: async (id: string) => {
     const { data } = await http.post<Nft>(`/nfts/${id}/mint`);

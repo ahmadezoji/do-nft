@@ -26,6 +26,11 @@ export const generateImageSchema = z.object({
   outputHeight: z.coerce.number().int().min(256).max(4096).optional()
 });
 
+export const uploadImageSchema = z.object({
+  imageDataUrl: z.string().regex(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, "imageDataUrl must be a base64 image data URL"),
+  fileName: z.string().max(160).optional()
+});
+
 export const createNftSchema = z.object({
   collectionId: z.string().optional(),
   templateId: z.string().optional(),
