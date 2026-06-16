@@ -28,4 +28,12 @@ export class AutoPromoterController {
   aiSuggest = async (request: Request, response: Response) => {
     response.json(await this.autoPromoterService.aiSuggest(request.auth!.userId));
   };
+
+  stop = async (request: Request, response: Response) => {
+    response.json(await this.autoPromoterService.stop(request.auth!.userId));
+  };
+
+  runNow = async (request: Request, response: Response) => {
+    response.json(await this.autoPromoterService.runNow(request.auth!.userId));
+  };
 }

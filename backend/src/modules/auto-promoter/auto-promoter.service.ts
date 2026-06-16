@@ -62,6 +62,31 @@ export class AutoPromoterService {
     return this.autoPromoterRepository.listLogs(userId);
   }
 
+  async stop(userId: string) {
+    const existing = await this.autoPromoterRepository.getSettings(userId);
+
+    const settings = await this.autoPromoterRepository.upsertSettings(userId, {
+      enabled: false,
+      collectionId: existing?.collectionId ?? undefined,
+      keywords: existing?.keywords ?? [],
+      targetHandles: existing?.targetHandles ?? [],
+      intervalMinutes: existing?.intervalMinutes ?? 720
+    });
+
+    await this.autoPromoterRepository.createLog(userId, {
+      type: AutoPromoterLogType.INFO,
+      status: AutoPromoterLogStatus.SENT,
+      message: "Auto-promoter stopped manually."
+    });
+
+    return settings;
+  }
+
+  async runNow(userId: string) {
+    await this.runForUser(userId);
+    return this.autoPromoterRepository.listLogs(userId);
+  }
+
   async aiSuggest(userId: string) {
     const nft = await this.findPromoNft(userId);
     const collection = nft

@@ -38,6 +38,8 @@ export const AutoPromoterPage = () => {
   const [logs, setLogs] = useState<AutoPromoterLogEntry[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
+  const [isRunningNow, setIsRunningNow] = useState(false);
   const [actingLogId, setActingLogId] = useState("");
   const [aiTargets, setAiTargets] = useState<{ keywords: string[]; handles: string[] } | null>(null);
   const { success, error } = useAlerts();
@@ -115,6 +117,35 @@ export const AutoPromoterPage = () => {
       error(getErrorMessage(caughtError, t("somethingWentWrong")));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const stopPromoter = async () => {
+    setIsStopping(true);
+
+    try {
+      await autoPromoterService.stop();
+      setForm((current) => ({ ...current, enabled: false }));
+      const logData = await autoPromoterService.listLogs();
+      setLogs(logData);
+      success(t("autoPromoterStopped"));
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setIsStopping(false);
+    }
+  };
+
+  const runNowHandler = async () => {
+    setIsRunningNow(true);
+
+    try {
+      const logData = await autoPromoterService.runNow();
+      setLogs(logData);
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setIsRunningNow(false);
     }
   };
 
@@ -212,6 +243,33 @@ export const AutoPromoterPage = () => {
                 {t("saveAutoPromoterSettings")}
               </span>
             </button>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => void runNowHandler()}
+                disabled={isRunningNow}
+                style={{ flex: 1 }}
+              >
+                <span className="button-label">
+                  {isRunningNow ? <LoadingSpinner size="sm" /> : null}
+                  {isRunningNow ? t("running") : t("runNow")}
+                </span>
+              </button>
+              {form.enabled ? (
+                <button
+                  type="button"
+                  className="danger-button"
+                  onClick={() => void stopPromoter()}
+                  disabled={isStopping}
+                  style={{ flex: 1 }}
+                >
+                  <span className="button-label">
+                    {isStopping ? <LoadingSpinner size="sm" /> : null}
+                    {t("stopAutoPromoter")}
+                  </span>
+                </button>
+              ) : null}
+            </div>
           </form>
         </Card>
 

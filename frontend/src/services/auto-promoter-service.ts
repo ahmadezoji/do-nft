@@ -32,5 +32,13 @@ export const autoPromoterService = {
   aiSuggest: async () => {
     const { data } = await http.post<{ keywords: string[]; handles: string[] }>("/auto-promoter/ai-suggest");
     return data;
+  },
+  stop: async () => {
+    const { data } = await http.post<AutoPromoterSettings>("/auto-promoter/stop");
+    return data;
+  },
+  runNow: async () => {
+    const { data } = await http.post<AutoPromoterLogEntry[]>("/auto-promoter/run-now");
+    return data;
   }
 };

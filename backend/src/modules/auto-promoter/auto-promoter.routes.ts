@@ -17,5 +17,7 @@ router.get("/logs", asyncHandler(controller.listLogs));
 router.post("/logs/:id/approve", asyncHandler(controller.approveLog));
 router.post("/logs/:id/dismiss", asyncHandler(controller.dismissLog));
 router.post("/ai-suggest", asyncHandler(controller.aiSuggest));
+router.post("/stop", asyncHandler(controller.stop));
+router.post("/run-now", asyncHandler(controller.runNow));
 
 export const autoPromoterRouter = router;
