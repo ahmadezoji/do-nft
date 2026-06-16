@@ -1,5 +1,5 @@
 import { AppError } from "../../common/errors/app-error.js";
-import { AutoPromoterLogStatus, AutoPromoterLogType } from "../../common/constants/domain-enums.js";
+import { AutoPromoterLogStatus, AutoPromoterLogType, NftStatus } from "../../common/constants/domain-enums.js";
 import { prisma } from "../../database/prisma.js";
 import { XService } from "../x/x.service.js";
 
@@ -23,7 +23,8 @@ export class AutoPromoterService {
         enabled: false,
         collectionId: null,
         keywords: [] as string[],
-        intervalMinutes: 60,
+        targetHandles: [] as string[],
+        intervalMinutes: 720,
         lastRunAt: null
       }
     );
@@ -31,7 +32,7 @@ export class AutoPromoterService {
 
   async updateSettings(
     userId: string,
-    input: { enabled: boolean; collectionId?: string; keywords: string[]; intervalMinutes: number }
+    input: { enabled: boolean; collectionId?: string; keywords: string[]; targetHandles: string[]; intervalMinutes: number }
   ) {
     const existing = await this.autoPromoterRepository.getSettings(userId);
     const settings = await this.autoPromoterRepository.upsertSettings(userId, input);
@@ -76,12 +77,91 @@ export class AutoPromoterService {
     return "NFT collector OR NFT buyer";
   }
 
+  private async findPromoNft(userId: string) {
+    const listed = await prisma.nft.findFirst({
+      where: { userId, status: NftStatus.LISTED },
+      orderBy: { updatedAt: "desc" }
+    });
+
+    if (listed) return listed;
+
+    return prisma.nft.findFirst({
+      where: { userId, listingUrl: { not: null } },
+      orderBy: { updatedAt: "desc" }
+    });
+  }
+
+  private buildReplyText(nft: { name: string; description?: string | null; listingUrl?: string | null; imageUrl?: string | null }) {
+    const link = nft.listingUrl ?? nft.imageUrl ?? "";
+    const desc = nft.description ? ` — ${nft.description.slice(0, 80)}` : "";
+    const base = `Hey! Check out my NFT "${nft.name}"${desc}\n\n${link}\n\n#NFTCommunity #DigitalArt #NFTCollector`;
+
+    return base.slice(0, 280);
+  }
+
+  private async replyToCollectors(userId: string, targetHandles: string[]) {
+    if (targetHandles.length === 0) return;
+
+    const nft = await this.findPromoNft(userId);
+
+    if (!nft) {
+      await this.autoPromoterRepository.createLog(userId, {
+        type: AutoPromoterLogType.INFO,
+        status: AutoPromoterLogStatus.SENT,
+        message: "No listed NFT found to promote. List an NFT on OpenSea first."
+      });
+      return;
+    }
+
+    const replyText = this.buildReplyText(nft);
+
+    for (const handle of targetHandles.slice(0, 5)) {
+      try {
+        const latestTweet = await this.xService.getLatestTweetFromHandle(userId, handle);
+
+        if (!latestTweet) {
+          continue;
+        }
+
+        const alreadyReplied = await this.autoPromoterRepository.findExistingSuggestion(userId, latestTweet.id);
+
+        if (alreadyReplied) {
+          continue;
+        }
+
+        const reply = await this.xService.replyToTweet(userId, latestTweet.id, replyText);
+
+        await this.autoPromoterRepository.createLog(userId, {
+          type: AutoPromoterLogType.ACTION,
+          status: AutoPromoterLogStatus.SENT,
+          message: `Replied to @${handle}'s latest post with "${nft.name}" promotion.`,
+          targetHandle: handle,
+          targetTweetId: latestTweet.id,
+          targetUrl: reply.url
+        });
+      } catch (caughtError) {
+        const message = caughtError instanceof AppError
+          ? caughtError.message
+          : `Failed to reply to @${handle}.`;
+
+        await this.autoPromoterRepository.createLog(userId, {
+          type: AutoPromoterLogType.ERROR,
+          status: AutoPromoterLogStatus.SENT,
+          message,
+          targetHandle: handle
+        });
+      }
+    }
+  }
+
   async runForUser(userId: string) {
     const settings = await this.autoPromoterRepository.getSettings(userId);
 
     if (!settings?.enabled) {
       return;
     }
+
+    await this.replyToCollectors(userId, settings.targetHandles);
 
     const query = await this.buildSearchQuery(settings);
 

@@ -7,7 +7,7 @@ export class AutoPromoterRepository {
 
   upsertSettings(
     userId: string,
-    data: { enabled: boolean; collectionId?: string; keywords: string[]; intervalMinutes: number }
+    data: { enabled: boolean; collectionId?: string; keywords: string[]; targetHandles: string[]; intervalMinutes: number }
   ) {
     return prisma.autoPromoterSettings.upsert({
       where: { userId },

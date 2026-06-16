@@ -22,7 +22,8 @@ export const AutoPromoterPage = () => {
     enabled: false,
     collectionId: "",
     keywords: "",
-    intervalMinutes: 60
+    targetHandles: "",
+    intervalMinutes: 720
   });
 
   const load = async () => {
@@ -36,6 +37,7 @@ export const AutoPromoterPage = () => {
       enabled: settings.enabled,
       collectionId: settings.collectionId ?? "",
       keywords: settings.keywords.join(", "),
+      targetHandles: settings.targetHandles.join(", "),
       intervalMinutes: settings.intervalMinutes
     });
     setCollections(collectionData);
@@ -61,8 +63,13 @@ export const AutoPromoterPage = () => {
         collectionId: form.collectionId || undefined,
         keywords: form.keywords
           .split(",")
-          .map((keyword) => keyword.trim())
+          .map((k) => k.trim())
           .filter(Boolean),
+        targetHandles: form.targetHandles
+          .split(",")
+          .map((h) => h.trim().replace(/^@/, ""))
+          .filter(Boolean)
+          .slice(0, 5),
         intervalMinutes: form.intervalMinutes
       });
       await load();
@@ -136,6 +143,14 @@ export const AutoPromoterPage = () => {
                 onChange={(event) => setForm((current) => ({ ...current, keywords: event.target.value }))}
                 placeholder="NFT collector, digital art buyer"
               />
+            </FormField>
+            <FormField label={t("autoPromoterHandles")}>
+              <input
+                value={form.targetHandles}
+                onChange={(event) => setForm((current) => ({ ...current, targetHandles: event.target.value }))}
+                placeholder="@nftcollector, @artbuyer (max 5)"
+              />
+              <p className="muted" style={{ fontSize: "0.8em" }}>{t("autoPromoterHandlesHint")}</p>
             </FormField>
             <FormField label={t("autoPromoterInterval")}>
               <input

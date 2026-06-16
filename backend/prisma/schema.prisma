@@ -274,7 +274,8 @@ model AutoPromoterSettings {
   enabled         Boolean   @default(false)
   collectionId    String?
   keywords        String[]
-  intervalMinutes Int       @default(60)
+  targetHandles   String[]
+  intervalMinutes Int       @default(720)
   lastRunAt       DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

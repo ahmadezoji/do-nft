@@ -11,6 +11,7 @@ export const autoPromoterService = {
     enabled: boolean;
     collectionId?: string;
     keywords: string[];
+    targetHandles: string[];
     intervalMinutes: number;
   }) => {
     const { data } = await http.put<AutoPromoterSettings>("/auto-promoter/settings", payload);

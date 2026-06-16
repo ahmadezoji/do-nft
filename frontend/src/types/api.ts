@@ -159,6 +159,7 @@ export type AutoPromoterSettings = {
   enabled: boolean;
   collectionId?: string | null;
   keywords: string[];
+  targetHandles: string[];
   intervalMinutes: number;
   lastRunAt?: string | null;
 };

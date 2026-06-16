@@ -162,6 +162,44 @@ export class XService {
     }
   }
 
+  async getLatestTweetFromHandle(userId: string, handle: string) {
+    const client = await this.getClient(userId);
+
+    try {
+      const user = await client.v2.userByUsername(handle);
+
+      if (!user.data) {
+        return null;
+      }
+
+      const timeline = await client.v2.userTimeline(user.data.id, { max_results: 5, exclude: ["replies", "retweets"] });
+      const tweet = timeline.data?.data?.[0];
+
+      if (!tweet) {
+        return null;
+      }
+
+      return { id: tweet.id, text: tweet.text, authorHandle: handle };
+    } catch (caughtError) {
+      throw this.toAppError(caughtError) ?? caughtError;
+    }
+  }
+
+  async replyToTweet(userId: string, tweetId: string, text: string) {
+    const client = await this.getClient(userId);
+
+    try {
+      const result = await client.v2.reply(text, tweetId);
+
+      return {
+        id: result.data.id,
+        url: `https://x.com/i/web/status/${result.data.id}`
+      };
+    } catch (caughtError) {
+      throw this.toAppError(caughtError) ?? caughtError;
+    }
+  }
+
   async searchRecent(userId: string, query: string, maxResults = 10) {
     const client = await this.getClient(userId);
 
