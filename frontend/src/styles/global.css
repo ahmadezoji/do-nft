@@ -498,6 +498,58 @@ textarea {
   border-bottom: 0;
 }
 
+.console-log {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(246, 241, 233, 0.08);
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace;
+  font-size: 0.72rem;
+  line-height: 1.7;
+  max-height: 360px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.console-log-line {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.15rem 0;
+  border-bottom: 1px solid rgba(246, 241, 233, 0.04);
+}
+
+.console-log-line:last-child {
+  border-bottom: 0;
+}
+
+.console-ts {
+  color: rgba(246, 241, 233, 0.35);
+  white-space: nowrap;
+}
+
+.console-msg {
+  color: rgba(246, 241, 233, 0.8);
+  word-break: break-word;
+}
+
+.console-msg.is-error   { color: #e06c75; }
+.console-msg.is-success { color: #98c379; }
+.console-msg.is-info    { color: #61afef; }
+
+.cost-info {
+  background: rgba(97, 175, 239, 0.07);
+  border: 1px solid rgba(97, 175, 239, 0.18);
+  border-radius: 6px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: rgba(246, 241, 233, 0.7);
+}
+
 .publish-meta {
   display: grid;
   gap: 0.2rem;

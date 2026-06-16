@@ -11,6 +11,28 @@ import { useLanguage } from "../../store/language-context";
 import { getErrorMessage } from "../../utils/get-error-message";
 import type { AutoPromoterLogEntry, Collection } from "../../types/api";
 
+const LOG_ICON: Record<string, string> = {
+  ACTION: "✅",
+  INFO: "ℹ️",
+  DISCOVERY: "🔍",
+  SUGGESTION: "💡",
+  ERROR: "❌"
+};
+
+const LOG_CLASS: Record<string, string> = {
+  ACTION: "is-success",
+  INFO: "is-info",
+  DISCOVERY: "is-info",
+  SUGGESTION: "is-info",
+  ERROR: "is-error"
+};
+
+function formatTs(iso: string) {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export const AutoPromoterPage = () => {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [logs, setLogs] = useState<AutoPromoterLogEntry[]>([]);
@@ -173,39 +195,62 @@ export const AutoPromoterPage = () => {
         </Card>
 
         <Card>
-          <h3>{t("activityLog")}</h3>
           <div className="stack compact">
-            {logs.length ? (
-              logs.map((log) => (
-                <div key={log.id} className="post-preview">
-                  <div className="list-row">
-                    <span className="eyebrow">{log.type}</span>
-                    <span>{log.status}</span>
-                  </div>
-                  <p>{log.message}</p>
-                  {log.targetUrl ? (
-                    <a href={log.targetUrl} target="_blank" rel="noreferrer">
-                      {log.targetUrl}
-                    </a>
-                  ) : null}
-                  {log.status === "PENDING" ? (
-                    <div className="list-row">
-                      <button type="button" onClick={() => act(log.id, "approve")} disabled={actingLogId === log.id}>
-                        <span className="button-label">
-                          {actingLogId === log.id ? <LoadingSpinner size="sm" /> : null}
-                          {t("approve")}
+            <h3>{t("activityLog")}</h3>
+            <p className="muted" style={{ fontSize: "0.8em" }}>{t("activityLogHint")}</p>
+
+            <div className="console-log">
+              {logs.length ? (
+                logs.map((log) => (
+                  <div key={log.id} className="console-log-line">
+                    <span className="console-ts">[{formatTs(log.createdAt)}]</span>
+                    <span className={`console-msg ${LOG_CLASS[log.type] ?? ""}`}>
+                      {LOG_ICON[log.type] ?? "•"}{" "}
+                      {log.targetHandle ? <strong>@{log.targetHandle}</strong> : null}
+                      {log.targetHandle ? " — " : null}
+                      {log.message}
+                      {log.targetUrl ? (
+                        <>
+                          {" "}
+                          <a href={log.targetUrl} target="_blank" rel="noreferrer" style={{ color: "inherit", opacity: 0.7 }}>
+                            [view]
+                          </a>
+                        </>
+                      ) : null}
+                      {log.status === "PENDING" ? (
+                        <span style={{ marginLeft: "0.5rem" }}>
+                          <button
+                            type="button"
+                            style={{ fontSize: "0.75rem", padding: "0.1rem 0.4rem" }}
+                            onClick={() => act(log.id, "approve")}
+                            disabled={actingLogId === log.id}
+                          >
+                            {t("approve")}
+                          </button>
+                          {" "}
+                          <button
+                            type="button"
+                            style={{ fontSize: "0.75rem", padding: "0.1rem 0.4rem" }}
+                            onClick={() => act(log.id, "dismiss")}
+                            disabled={actingLogId === log.id}
+                          >
+                            {t("dismiss")}
+                          </button>
                         </span>
-                      </button>
-                      <button type="button" onClick={() => act(log.id, "dismiss")} disabled={actingLogId === log.id}>
-                        {t("dismiss")}
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              ))
-            ) : (
-              <p className="muted">{t("noActivityYet")}</p>
-            )}
+                      ) : null}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <span className="console-msg is-info">ℹ️ {t("noActivityYet")}</span>
+              )}
+            </div>
+
+            <div className="cost-info">
+              <strong>{t("xApiCostTitle")}</strong><br />
+              {t("xApiCostPerRun")}<br />
+              <span style={{ opacity: 0.6 }}>{t("xApiCostNote")}</span>
+            </div>
           </div>
         </Card>
       </div>
