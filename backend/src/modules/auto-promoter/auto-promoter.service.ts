@@ -133,15 +133,17 @@ export class AutoPromoterService {
     });
   }
 
-  private buildReplyText(nft: { name: string; description?: string | null; listingUrl?: string | null; imageUrl?: string | null }) {
+  private buildMentionText(nft: { name: string; description?: string | null; listingUrl?: string | null; imageUrl?: string | null }, handle: string) {
     const link = nft.listingUrl ?? nft.imageUrl ?? "";
-    const desc = nft.description ? ` — ${nft.description.slice(0, 80)}` : "";
-    const base = `Hey! Check out my NFT "${nft.name}"${desc}\n\n${link}\n\n#NFTCommunity #DigitalArt #NFTCollector`;
+    const suffix = `\n\n${link}\n\n#NFTCommunity #DigitalArt #NFTCollector`;
+    const maxIntro = 280 - suffix.length;
+    const desc = nft.description ? ` — ${nft.description.slice(0, 60)}` : "";
+    const intro = `Hey @${handle}! 👋 Check out my NFT "${nft.name}"${desc}`;
 
-    return base.slice(0, 280);
+    return intro.slice(0, maxIntro) + suffix;
   }
 
-  private async replyToCollectors(userId: string, targetHandles: string[]) {
+  private async mentionCollectors(userId: string, targetHandles: string[]) {
     if (targetHandles.length === 0) return;
 
     const nft = await this.findPromoNft(userId);
@@ -155,36 +157,28 @@ export class AutoPromoterService {
       return;
     }
 
-    const replyText = this.buildReplyText(nft);
-
     for (const handle of targetHandles.slice(0, 5)) {
       try {
-        const latestTweet = await this.xService.getLatestTweetFromHandle(userId, handle);
+        const alreadyMentioned = await this.autoPromoterRepository.findRecentMentionForHandle(userId, handle);
 
-        if (!latestTweet) {
+        if (alreadyMentioned) {
           continue;
         }
 
-        const alreadyReplied = await this.autoPromoterRepository.findExistingSuggestion(userId, latestTweet.id);
-
-        if (alreadyReplied) {
-          continue;
-        }
-
-        const reply = await this.xService.replyToTweet(userId, latestTweet.id, replyText);
+        const text = this.buildMentionText(nft, handle);
+        const tweet = await this.xService.postTweet(userId, text);
 
         await this.autoPromoterRepository.createLog(userId, {
           type: AutoPromoterLogType.ACTION,
           status: AutoPromoterLogStatus.SENT,
-          message: `Replied to @${handle}'s latest post with "${nft.name}" promotion.`,
+          message: `Mentioned @${handle} with "${nft.name}" promotion.`,
           targetHandle: handle,
-          targetTweetId: latestTweet.id,
-          targetUrl: reply.url
+          targetUrl: tweet.url
         });
       } catch (caughtError) {
         const message = caughtError instanceof AppError
           ? caughtError.message
-          : `Failed to reply to @${handle}.`;
+          : `Failed to mention @${handle}.`;
 
         await this.autoPromoterRepository.createLog(userId, {
           type: AutoPromoterLogType.ERROR,
@@ -203,7 +197,7 @@ export class AutoPromoterService {
       return;
     }
 
-    await this.replyToCollectors(userId, settings.targetHandles);
+    await this.mentionCollectors(userId, settings.targetHandles);
 
     const query = await this.buildSearchQuery(settings);
 

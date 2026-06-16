@@ -81,6 +81,20 @@ export class AutoPromoterRepository {
     });
   }
 
+  findRecentMentionForHandle(userId: string, handle: string, daysBack = 7) {
+    const since = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000);
+
+    return prisma.autoPromoterLogEntry.findFirst({
+      where: {
+        userId,
+        targetHandle: handle,
+        type: "ACTION",
+        status: "SENT",
+        createdAt: { gte: since }
+      }
+    });
+  }
+
   async listEnabledUsersDueForRun() {
     const settings = await prisma.autoPromoterSettings.findMany({ where: { enabled: true } });
     const now = Date.now();
