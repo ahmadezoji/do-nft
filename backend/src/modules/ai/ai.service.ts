@@ -4,7 +4,7 @@ import { env } from "../../config/env.js";
 import { prisma } from "../../database/prisma.js";
 import { CredentialsService } from "../credentials/credentials.service.js";
 
-import type { ImageGenerationInput, ImageGenerationProvider, TextGenerationProvider } from "./ai.types.js";
+import type { CollectorSuggestionsContext, ImageGenerationInput, ImageGenerationProvider, TextGenerationProvider } from "./ai.types.js";
 import { MockAiProvider } from "./providers/mock.provider.js";
 import { OpenAiImageProvider } from "./providers/openai-image.provider.js";
 
@@ -112,5 +112,9 @@ export class AiService {
       socialMediaStyle: branding?.socialMediaStyle,
       defaultHashtags: branding?.defaultHashtags
     });
+  }
+
+  async generateCollectorSuggestions(userId: string, context: CollectorSuggestionsContext) {
+    return this.textProvider.generateCollectorSuggestions(context);
   }
 }

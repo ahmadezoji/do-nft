@@ -54,10 +54,17 @@ export type ImageGenerationResult = {
   model?: string | null;
 };
 
+export type CollectorSuggestionsContext = {
+  nftName: string;
+  nftDescription?: string;
+  collectionTheme?: string;
+};
+
 export interface TextGenerationProvider {
   readonly name: string;
   generatePrompt(context: PromptGenerationContext): Promise<string>;
   generatePromotion(context: PromotionGenerationContext): Promise<Record<string, { content: string; hashtags: string[] }>>;
+  generateCollectorSuggestions(context: CollectorSuggestionsContext): Promise<{ keywords: string[]; handles: string[] }>;
 }
 
 export interface ImageGenerationProvider {

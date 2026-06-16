@@ -28,5 +28,9 @@ export const autoPromoterService = {
   dismissLog: async (id: string) => {
     const { data } = await http.post<AutoPromoterLogEntry>(`/auto-promoter/logs/${id}/dismiss`);
     return data;
+  },
+  aiSuggest: async () => {
+    const { data } = await http.post<{ keywords: string[]; handles: string[] }>("/auto-promoter/ai-suggest");
+    return data;
   }
 };

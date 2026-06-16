@@ -24,4 +24,8 @@ export class AutoPromoterController {
   dismissLog = async (request: Request, response: Response) => {
     response.json(await this.autoPromoterService.actOnLog(request.auth!.userId, String(request.params.id), "dismiss"));
   };
+
+  aiSuggest = async (request: Request, response: Response) => {
+    response.json(await this.autoPromoterService.aiSuggest(request.auth!.userId));
+  };
 }

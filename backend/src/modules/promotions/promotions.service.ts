@@ -139,7 +139,13 @@ export class PromotionsService {
         });
       }
 
-      const text = `${post.content}\n\n${post.hashtags.join(" ")}`.trim().slice(0, 280);
+      const nft = campaign.nft;
+      const link = nft?.listingUrl ?? nft?.imageUrl ?? "";
+      const tags = post.hashtags.join(" ");
+      const suffix = [link, tags].filter(Boolean).join("\n\n");
+      const maxCaption = Math.max(0, 278 - suffix.length);
+      const caption = post.content.slice(0, maxCaption);
+      const text = suffix ? `${caption}\n\n${suffix}` : caption;
       const tweet = await this.xService.postTweet(userId, text);
 
       return this.promotionsRepository.updatePostResult(postId, {

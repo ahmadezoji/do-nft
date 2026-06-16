@@ -37,14 +37,14 @@ export const AutoPromoterPage = () => {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [logs, setLogs] = useState<AutoPromoterLogEntry[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuggesting, setIsSuggesting] = useState(false);
   const [actingLogId, setActingLogId] = useState("");
+  const [aiTargets, setAiTargets] = useState<{ keywords: string[]; handles: string[] } | null>(null);
   const { success, error } = useAlerts();
   const { t } = useLanguage();
   const [form, setForm] = useState({
     enabled: false,
     collectionId: "",
-    keywords: "",
-    targetHandles: "",
     intervalMinutes: 720
   });
 
@@ -58,10 +58,11 @@ export const AutoPromoterPage = () => {
     setForm({
       enabled: settings.enabled,
       collectionId: settings.collectionId ?? "",
-      keywords: settings.keywords.join(", "),
-      targetHandles: settings.targetHandles.join(", "),
       intervalMinutes: settings.intervalMinutes
     });
+    if (settings.keywords.length || settings.targetHandles.length) {
+      setAiTargets({ keywords: settings.keywords, handles: settings.targetHandles });
+    }
     setCollections(collectionData);
     setLogs(logData);
   };
@@ -75,6 +76,27 @@ export const AutoPromoterPage = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const askAi = async () => {
+    setIsSuggesting(true);
+
+    try {
+      const suggestions = await autoPromoterService.aiSuggest();
+      setAiTargets(suggestions);
+      await autoPromoterService.updateSettings({
+        enabled: form.enabled,
+        collectionId: form.collectionId || undefined,
+        keywords: suggestions.keywords,
+        targetHandles: suggestions.handles,
+        intervalMinutes: form.intervalMinutes
+      });
+      success(t("aiTargetsUpdated"));
+    } catch (caughtError) {
+      error(getErrorMessage(caughtError, t("somethingWentWrong")));
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
@@ -83,15 +105,8 @@ export const AutoPromoterPage = () => {
       await autoPromoterService.updateSettings({
         enabled: form.enabled,
         collectionId: form.collectionId || undefined,
-        keywords: form.keywords
-          .split(",")
-          .map((k) => k.trim())
-          .filter(Boolean),
-        targetHandles: form.targetHandles
-          .split(",")
-          .map((h) => h.trim().replace(/^@/, ""))
-          .filter(Boolean)
-          .slice(0, 5),
+        keywords: aiTargets?.keywords ?? [],
+        targetHandles: aiTargets?.handles ?? [],
         intervalMinutes: form.intervalMinutes
       });
       await load();
@@ -159,21 +174,27 @@ export const AutoPromoterPage = () => {
                 ))}
               </select>
             </FormField>
-            <FormField label={t("autoPromoterKeywords")}>
-              <input
-                value={form.keywords}
-                onChange={(event) => setForm((current) => ({ ...current, keywords: event.target.value }))}
-                placeholder="NFT collector, digital art buyer"
-              />
-            </FormField>
-            <FormField label={t("autoPromoterHandles")}>
-              <input
-                value={form.targetHandles}
-                onChange={(event) => setForm((current) => ({ ...current, targetHandles: event.target.value }))}
-                placeholder="@nftcollector, @artbuyer (max 5)"
-              />
-              <p className="muted" style={{ fontSize: "0.8em" }}>{t("autoPromoterHandlesHint")}</p>
-            </FormField>
+            <div className="stack compact">
+              <button type="button" onClick={() => void askAi()} disabled={isSuggesting}>
+                <span className="button-label">
+                  {isSuggesting ? <LoadingSpinner size="sm" /> : null}
+                  {t("findCollectorsWithAi")}
+                </span>
+              </button>
+              {aiTargets ? (
+                <div className="cost-info">
+                  <strong>{t("aiTargetsLabel")}</strong><br />
+                  <span className="muted" style={{ fontSize: "0.8em" }}>
+                    {t("aiTargetsHandles")}: {aiTargets.handles.map((h) => `@${h}`).join(", ")}
+                  </span><br />
+                  <span className="muted" style={{ fontSize: "0.8em" }}>
+                    {t("aiTargetsKeywords")}: {aiTargets.keywords.join(", ")}
+                  </span>
+                </div>
+              ) : (
+                <p className="muted" style={{ fontSize: "0.8em" }}>{t("aiTargetsHint")}</p>
+              )}
+            </div>
             <FormField label={t("autoPromoterInterval")}>
               <input
                 type="number"
@@ -246,11 +267,6 @@ export const AutoPromoterPage = () => {
               )}
             </div>
 
-            <div className="cost-info">
-              <strong>{t("xApiCostTitle")}</strong><br />
-              {t("xApiCostPerRun")}<br />
-              <span style={{ opacity: 0.6 }}>{t("xApiCostNote")}</span>
-            </div>
           </div>
         </Card>
       </div>

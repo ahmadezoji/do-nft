@@ -60,16 +60,33 @@ export class MockAiProvider implements TextGenerationProvider, ImageGenerationPr
   }
 
   async generatePromotion(context: PromotionGenerationContext) {
-    const link = context.assetUrl ? `\n\n${context.assetUrl}` : "";
+    const fullDesc = context.assetDescription
+      ? `${context.assetDescription.slice(0, 120)}${context.assetDescription.length > 120 ? "…" : ""}`
+      : "";
 
     return Object.fromEntries(
-      context.platforms.map((platform) => [
-        platform,
-        {
-          content: `Discover ${context.assetName}. ${context.assetDescription ?? ""} Crafted for collectors who value ${context.toneOfVoice ?? "distinctive digital art"}.${link}`,
-          hashtags: [...(context.defaultHashtags ?? []), "#NFT", "#DigitalArt", `#${platform}`]
-        }
-      ])
+      context.platforms.map((platform) => {
+        const isTwitter = platform === "TWITTER";
+
+        const content = isTwitter
+          ? `🎨 "${context.assetName}" — ${fullDesc ? `${fullDesc.slice(0, 80)} ` : ""}A must-have for collectors of distinctive digital art.`
+          : `Discover ${context.assetName}. ${context.assetDescription ?? ""} Crafted for collectors who value ${context.toneOfVoice ?? "distinctive digital art"}.`;
+
+        const hashtags = isTwitter
+          ? [...(context.defaultHashtags ?? []), "#NFTCommunity", "#DigitalArt", "#NFTCollector", "#CryptoArt"]
+          : [...(context.defaultHashtags ?? []), "#NFT", "#DigitalArt", `#${platform}`];
+
+        return [platform, { content, hashtags }];
+      })
     );
+  }
+
+  async generateCollectorSuggestions(context: { nftName: string; nftDescription?: string; collectionTheme?: string }) {
+    const theme = context.collectionTheme ?? context.nftDescription ?? context.nftName;
+
+    return {
+      keywords: ["NFT collector", "digital art buyer", "crypto art", `${theme.split(" ")[0]} NFT`, "NFT drop"],
+      handles: ["beeple_crap", "punk6529", "NFTcollector", "pranksy_nft", "artcollector"]
+    };
   }
 }

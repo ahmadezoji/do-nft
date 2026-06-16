@@ -1,6 +1,7 @@
 import { AppError } from "../../common/errors/app-error.js";
 import { AutoPromoterLogStatus, AutoPromoterLogType, NftStatus } from "../../common/constants/domain-enums.js";
 import { prisma } from "../../database/prisma.js";
+import { AiService } from "../ai/ai.service.js";
 import { XService } from "../x/x.service.js";
 
 import { AutoPromoterRepository } from "./auto-promoter.repository.js";
@@ -10,7 +11,8 @@ type SuggestedAction = { type: "retweet"; tweetId: string };
 export class AutoPromoterService {
   constructor(
     private readonly autoPromoterRepository = new AutoPromoterRepository(),
-    private readonly xService = new XService()
+    private readonly xService = new XService(),
+    private readonly aiService = new AiService()
   ) {}
 
   async getSettings(userId: string) {
@@ -58,6 +60,21 @@ export class AutoPromoterService {
 
   listLogs(userId: string) {
     return this.autoPromoterRepository.listLogs(userId);
+  }
+
+  async aiSuggest(userId: string) {
+    const nft = await this.findPromoNft(userId);
+    const collection = nft
+      ? null
+      : await prisma.collection.findFirst({ where: { userId }, orderBy: { updatedAt: "desc" } });
+
+    const suggestions = await this.aiService.generateCollectorSuggestions(userId, {
+      nftName: nft?.name ?? collection?.name ?? "NFT",
+      nftDescription: nft?.description ?? collection?.story ?? undefined,
+      collectionTheme: collection?.theme ?? undefined
+    });
+
+    return suggestions;
   }
 
   private async buildSearchQuery(settings: { collectionId?: string | null; keywords: string[] }) {
